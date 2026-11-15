@@ -2,14 +2,16 @@
 
 > [!summary]
 > **What:** two point-and-click comedy adventures for a child: the lighthouse island and a Maya-era tropical island. Original story, characters and drawings. Texts in Italian.
-> **Impact:** the game works offline; when published on HTTPS, it can also be installed as an app and shared by email or WhatsApp. Sharing starts only when the player taps a button.
-> **Open points:** GitHub Pages still needs to be enabled; coffee-support and advertising services have not been chosen.
-> **Next step:** enable Pages for the repository to get the public HTTPS address.
+> **Impact:** the game is public at https://dariobronx.github.io/pernacchia/; its source and original game content are reserved to the author.
+> **Open points:** the English option is a test only; voice-profile permissions need confirmation before commercial use. Coffee-support and advertising services have not been chosen.
+> **Next step:** play the Lighthouse story first; completing it unlocks the Maya adventure.
+
+© 2026 Dario Brambilla. Tutti i diritti riservati sui contenuti originali del gioco. Non è consentito copiarli, modificarli, distribuirli o riutilizzarli senza autorizzazione scritta.
 
 ## How to play
 
 - Open `index.html` in a browser (or `npm start`, then http://127.0.0.1:8142).
-- After GitHub Pages is enabled and provides a public HTTPS address, use **Installa il gioco** in the title menu. On iPhone/iPad, use the browser's **Share → Add to Home Screen** command. The offline app files are cached on installation; voice recordings are cached as they are played to avoid downloading all 24 MB at once.
+- Use **Installa il gioco** in the title menu. On iPhone/iPad, use the browser's **Share → Add to Home Screen** command. The offline app files are cached on installation; voice recordings are downloaded only when requested.
 - **Condividi / sostieni** opens explicit sharing choices (system share sheet, email, or WhatsApp). The recipient chooses whether to send. Until a coffee link and an advertising service are chosen, those two support options remain inactive; no advertising starts automatically.
 - Click on the scene to walk. Click a verb (Guarda, Prendi, Usa, Parla, Apri, Dai) and then a thing.
 - Click an object in the inventory to hold it, then click a thing or another object to use them together.
@@ -55,11 +57,15 @@ npm test
 ## Q&A
 
 - **What is "point-and-click"?** A game type where you play only by pointing and clicking: no reflexes needed, only reasoning.
-- **How does the reading voice work?** Every line of the story was recorded once, on this computer, with Kokoro (a voice program that works without internet; Italian voices "Sara" and "Nicola"). The recordings are the MP3 files in `voice/`. The `🗣 Voce` button just plays the right file, so the game needs no voice installed and sends no text anywhere. Each character gets a slightly different pitch and speed. The choice is remembered (browser key `pernacchia-voce`).
+- **How does the reading voice work?** Every line of the story was recorded once, on this computer, with Kokoro (a voice program that works without internet; Italian voice profiles `if_sara` and `im_nicola`). The recordings are the MP3 files in `voice/`. The `🗣 Voce` button downloads them only after the player asks; no voice is installed on the device and no text is sent anywhere. Each character gets a slightly different pitch and speed.
 - **What if I change a line of story text?** The changed line has no recording, so it is shown but not read. Two lines that contain a changing number (the coin counts) are never read.
 - **Why are the pictures sharp now?** They are still drawn by code in a 320 x 140 grid, but straight onto a 1920 x 1080 canvas instead of being drawn small and enlarged: curves, slopes and letters come out smooth, and small rectangles get soft corners.
 - **Where are the saves?** In the browser's local storage (a small private notebook), separately for each adventure: `pernacchia-save-pernacchia` and `pernacchia-save-maya`. "Nuova partita" erases the save for the selected adventure.
-- **What is a PWA?** A website that can be installed from the browser and opened like an app. Installation and offline support require the game to be published on HTTPS; the local development server is not a public download link. GitHub Pages must be enabled in repository settings after the source is uploaded.
-- **Why aren't all voice files downloaded on install?** There are more than a thousand recordings (about 24 MB). The game caches each recording only when it is first played, so the first installation stays small.
+- **What is a PWA?** A website that can be installed from the browser and opened like an app. Installation and offline support require HTTPS; the local development server is not a public download link.
+- **Why is the Maya adventure locked?** Complete the lighthouse adventure first. The Maya story then unlocks in that browser and on that device.
+- **What does English (test) do?** It is a test setting only: the story and menus remain Italian, and spoken audio is available only in Italian.
+- **How do I download the spoken voices?** Tap **Leggi** on the title screen or **Voce** during a story to start downloading them (about 23 MB). The game shows progress; choose **Annulla** to stop. Downloaded files are kept, so a later attempt can resume.
+- **Why aren't all voice files downloaded on install?** There are 1,005 recordings (about 23 MB). They are downloaded only when the player asks for spoken lines, to keep the initial install small.
 - **Why are the coffee and ad options inactive?** No payment link or ad provider has been chosen. They will stay inactive until configured, and the player must always choose to tap them.
 - **Can visits, downloads or app installs be counted?** GitHub Pages has no built-in visitor or install counter. GitHub shows limited traffic for the source repository, not reliable game-page visits. A separate analytics service would be needed for more detail; none is enabled.
+- **What about voice rights?** The Kokoro model is Apache-licensed, but that does not fully establish rights in its Italian voice profiles or every generated recording. See the [detailed voice-licensing review](docs/voice-licensing.md).

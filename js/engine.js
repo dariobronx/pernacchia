@@ -7,11 +7,18 @@
     pernacchia: window.AdvStory,
     maya: window.AdvStoryMaya,
   };
+  const MAIN_STORY_COMPLETE_KEY = 'pernacchia-main-story-complete';
+  const LANGUAGE_KEY = 'pernacchia-language';
   let currentStoryId = 'pernacchia';
+  let mainStoryComplete = false;
+  let language = 'it';
   try {
     const sId = localStorage.getItem('pernacchia-current-story');
     if (sId && STORIES[sId]) currentStoryId = sId;
+    mainStoryComplete = localStorage.getItem(MAIN_STORY_COMPLETE_KEY) === '1';
+    language = localStorage.getItem(LANGUAGE_KEY) === 'en' ? 'en' : 'it';
   } catch (err) {}
+  if (currentStoryId === 'maya' && !mainStoryComplete) currentStoryId = 'pernacchia';
   const getStory = () => STORIES[currentStoryId] || window.AdvStory;
 
   const W = 960, H = 540, SCENE_H = 420, Z = 3; // layout units; the scene is 320 x 140 units, 3 layout units each
@@ -33,6 +40,7 @@
     fade: 1, fadeTarget: 1, fadeDone: null,
     verb: null, held: null, mouse: { x: -1, y: -1 }, invRow: 0, zones: [], confirmNew: false,
     autoChoose: null, reveal: 0, card: null, note: null,
+    voiceDownload: null,
   };
   const NO_GAME = { flag: () => false, has: () => false };
 
@@ -129,6 +137,10 @@
       return new Promise((done) => { S.card = { n, title, age: 0, done }; });
     },
     async ending() {
+      if (currentStoryId === 'pernacchia' && S.game.g.flag('finito')) {
+        mainStoryComplete = true;
+        try { localStorage.setItem(MAIN_STORY_COMPLETE_KEY, '1'); } catch (err) {}
+      }
       if (!S.fast) await fadeTo(1);
       S.mode = 'ending'; clearSave(); Sound.music('taverna'); S.fade = 1; S.fadeTarget = 0;
     },
@@ -137,6 +149,10 @@
 
   function startGame(saved, storyId) {
     if (storyId && STORIES[storyId]) currentStoryId = storyId;
+    if (currentStoryId === 'maya' && !mainStoryComplete) {
+      currentStoryId = 'pernacchia';
+      S.note = { text: 'Completa prima l’avventura del Faro: poi si sbloccherà l’Isola Maya!', left: 5 };
+    }
     try { localStorage.setItem('pernacchia-current-story', currentStoryId); } catch (e) {}
     const curStory = getStory();
     S.game = Core.createGame(curStory, io, saved || undefined);
@@ -173,8 +189,116 @@
   function endSpeech() { const sp = S.speech; S.speech = null; Sound.hush(); if (sp) sp.done(); }
   function toggleRead() {
     Sound.unlock();
-    if (!Sound.toggleRead()) { S.note = { text: 'Mancano i file della voce (cartella voice).', left: 5 }; return; }
-    if (Sound.isReading()) S.note = { text: 'Voce accesa: ti leggo io le frasi.', left: 3 };
+    if (language === 'en') {
+      S.note = { text: 'Per ora la voce è disponibile solo in italiano.', left: 5 };
+      return;
+    }
+    if (Sound.isReading()) {
+      Sound.toggleRead();
+      S.note = { text: 'Voce disattivata.', left: 3 };
+      return;
+    }
+    startVoiceDownload();
+  }
+  function startVoiceDownload() {
+    if (S.voiceDownload) return;
+    if (!('serviceWorker' in navigator) || !navigator.serviceWorker) {
+      S.note = { text: 'Questo browser non permette di preparare le voci per l’ascolto offline.', left: 5 };
+      return;
+    }
+    const ids = Object.keys(window.AdvVoiceIndex || {});
+    if (!ids.length) {
+      S.note = { text: 'I file della voce non sono disponibili in questa versione.', left: 5 };
+      return;
+    }
+    const requestId = 'voices-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+    S.voiceDownload = { requestId, status: 'checking', completed: 0, total: ids.length };
+    navigator.serviceWorker.ready.then((registration) => {
+      if (!S.voiceDownload || S.voiceDownload.requestId !== requestId) return;
+      if (!registration.active) throw new Error('Il servizio offline non è pronto.');
+      registration.active.postMessage({
+        type: 'download-voices',
+        requestId,
+        ids,
+      });
+      S.voiceDownload.status = 'downloading';
+    }).catch((err) => {
+      if (S.voiceDownload && S.voiceDownload.requestId === requestId) {
+        S.voiceDownload.status = 'error';
+        S.voiceDownload.message = 'Scaricamento non disponibile. Controlla la connessione e riprova.';
+        console.error('Download delle voci non riuscito:', err);
+      }
+    });
+  }
+  function cancelVoiceDownload() {
+    const download = S.voiceDownload;
+    if (!download || download.status === 'cancelled' || download.status === 'error') {
+      S.voiceDownload = null;
+      return;
+    }
+    download.status = 'cancelling';
+    navigator.serviceWorker.ready.then((registration) => {
+      if (registration.active) registration.active.postMessage({ type: 'cancel-voice-download', requestId: download.requestId });
+    }).catch((err) => {
+      console.error('Annullamento del download delle voci non riuscito:', err);
+    });
+  }
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      const message = event.data;
+      const download = S.voiceDownload;
+      if (!download || !message || message.requestId !== download.requestId) return;
+      if (message.type === 'voice-download-progress') {
+        download.status = 'downloading';
+        download.completed = message.completed;
+        download.total = message.total;
+      } else if (message.type === 'voice-download-complete') {
+        S.voiceDownload = null;
+        Sound.toggleRead();
+        S.note = { text: 'Voci scaricate: ora posso leggere le frasi.', left: 5 };
+      } else if (message.type === 'voice-download-cancelled') {
+        download.status = 'cancelled';
+        download.completed = message.completed;
+      } else if (message.type === 'voice-download-error') {
+        download.status = 'error';
+        download.message = 'Scaricamento interrotto. Le voci già scaricate sono conservate; puoi riprovare.';
+        download.completed = message.completed;
+      }
+    });
+  }
+  function toggleLanguage() {
+    language = language === 'it' ? 'en' : 'it';
+    try { localStorage.setItem(LANGUAGE_KEY, language); } catch (err) {}
+    if (language === 'en' && Sound.isReading()) Sound.toggleRead();
+    S.note = language === 'en'
+      ? { text: 'Modalità English di prova: storia e menu sono ancora in italiano.', left: 5 }
+      : { text: 'Lingua italiana selezionata.', left: 3 };
+  }
+  function drawVoiceDownload() {
+    const download = S.voiceDownload;
+    if (!download) return;
+    ctx.fillStyle = 'rgba(0,0,0,0.78)'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = mayaTheme() ? '#26352b' : '#241c3e';
+    ctx.beginPath(); ctx.roundRect(170, 142, 620, 250, 16); ctx.fill();
+    ctx.strokeStyle = mayaTheme() ? '#f0d99c' : '#ffd95a'; ctx.lineWidth = 3; ctx.stroke();
+    text('Scaricamento delle voci', W / 2, 184, { size: 30, color: mayaTheme() ? '#f0d99c' : '#ffe066', lw: 6 });
+    const total = download.total || Object.keys(window.AdvVoiceIndex || {}).length;
+    const completed = Math.min(download.completed || 0, total);
+    const progress = total ? completed / total : 0;
+    text('Circa 23 MB · puoi annullare quando vuoi', W / 2, 224, { size: 18, color: '#f5ead1', lw: 4 });
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(245, 253, 470, 24, 10); ctx.fill();
+    ctx.fillStyle = mayaTheme() ? '#d5b36f' : '#f2c64f';
+    if (progress > 0) { ctx.beginPath(); ctx.roundRect(245, 253, Math.max(12, 470 * progress), 24, 10); ctx.fill(); }
+    const status = download.status === 'checking' ? 'Controllo dei file già presenti…'
+      : download.status === 'cancelling' ? 'Annullamento in corso…'
+        : download.status === 'cancelled' ? 'Annullato: i file già scaricati restano disponibili.'
+          : download.status === 'error' ? download.message
+            : completed + ' di ' + total + ' file (' + Math.round(progress * 100) + '%)';
+    text(status, W / 2, 307, { size: 17, color: '#f5ead1', lw: 4 });
+    button(365, 337, 230, 42,
+      download.status === 'cancelled' || download.status === 'error' ? 'Chiudi' : 'Annulla',
+      { fn: cancelVoiceDownload, voiceCancel: true },
+      { size: 20 });
   }
   function toggleGameSound() { Sound.unlock(); Sound.toggleSoundMute(); }
   function drawNote() {
@@ -219,6 +343,10 @@
   function click(mx, my, right) {
     Sound.unlock();
     const zone = zoneAt(mx, my);
+    if (S.voiceDownload) {
+      if (zone && zone.voiceCancel) { Sound.sfx('ui'); zone.fn(); }
+      return;
+    }
     if (S.mode !== 'play') { if (zone && zone.fn) { Sound.sfx('ui'); zone.fn(); } return; }
     if (S.card) { if (S.card.age > 0.6) endCard(); return; }
     if (S.speech) { if (S.speech.age > 0.25) endSpeech(); return; }
@@ -253,21 +381,26 @@
     o = o || {};
     const over = S.mouse.x >= x && S.mouse.x <= x + w && S.mouse.y >= y && S.mouse.y <= y + h;
     const maya = mayaTheme();
+    const help = o.emphasis === 'help';
     ctx.save();
     if (o.disabled) ctx.globalAlpha = 0.55;
+    if (help) { ctx.shadowColor = '#ffd95a'; ctx.shadowBlur = over ? 16 : 9; }
     if (maya) {
       ctx.beginPath(); ctx.roundRect(x, y, w, h, 7);
-      ctx.fillStyle = o.active ? '#d5b36f' : over ? '#55745a' : '#354b3c'; ctx.fill();
-      ctx.strokeStyle = o.active ? '#f0d99c' : '#b99a61'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = help ? (over ? '#f3d37e' : '#d5b36f') : o.active ? '#d5b36f' : over ? '#55745a' : '#354b3c'; ctx.fill();
+      ctx.strokeStyle = help ? '#fff0b0' : o.active ? '#f0d99c' : '#b99a61'; ctx.lineWidth = help ? 3 : 1.5; ctx.stroke();
       ctx.beginPath(); ctx.roundRect(x + 3, y + 3, w - 6, h - 6, 5);
-      ctx.strokeStyle = 'rgba(248,225,171,0.2)'; ctx.lineWidth = 0.75; ctx.stroke();
+      ctx.strokeStyle = help ? 'rgba(255,255,255,0.75)' : 'rgba(248,225,171,0.2)'; ctx.lineWidth = help ? 1.25 : 0.75; ctx.stroke();
     } else {
-      ctx.fillStyle = o.active ? '#e0a030' : over ? '#5a4a7a' : '#3a2f55'; ctx.fillRect(x, y, w, h);
-      ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(x, y, w, 3);
-      ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x, y + h - 3, w, 3);
+      ctx.fillStyle = help ? (over ? '#ffe48a' : '#f2c64f') : o.active ? '#e0a030' : over ? '#5a4a7a' : '#3a2f55'; ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = help ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.12)'; ctx.fillRect(x, y, w, help ? 4 : 3);
+      ctx.fillStyle = help ? '#805c16' : 'rgba(0,0,0,0.3)'; ctx.fillRect(x, y + h - (help ? 4 : 3), w, help ? 4 : 3);
+      if (help) {
+        ctx.strokeStyle = '#fff0ad'; ctx.lineWidth = 3; ctx.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
+      }
     }
     if (label) text(label, x + w / 2, y + h / 2 + 1, {
-      size: o.size || 19, color: maya ? (o.active ? '#342d20' : '#f3e5c4') : (o.active ? '#2a1a12' : '#ffe9a8'), outline: false,
+      size: o.size || 19, color: help || maya && o.active ? '#342d20' : maya ? '#f3e5c4' : o.active ? '#2a1a12' : '#ffe9a8', outline: false,
     });
     ctx.restore();
     S.zones.push(Object.assign({ x, y, w, h }, zone));
@@ -373,7 +506,7 @@
       button(696, 450, 30, 40, '▲', { fn: () => { S.invRow--; } }, { size: 14 });
       button(696, 494, 30, 40, '▼', { fn: () => { S.invRow++; } }, { size: 14 });
     }
-    button(736, 450, 105, 40, '💡 Aiuto', { fn: askHint, tip: 'Un consiglio su cosa fare adesso (tasto H)' });
+    button(736, 450, 105, 40, '💡 Aiuto', { fn: askHint, tip: 'Un consiglio su cosa fare adesso (tasto H)' }, { emphasis: 'help' });
     button(845, 450, 105, 40, '👁 Cose', { fn: () => { S.reveal = 4; }, tip: 'Mostra tutto quello che si può toccare (tasto C)' });
     ctx.globalAlpha = 1;
     button(736, 494, 50, 40, Sound.isSoundMuted() ? '🔇' : '🎵', { fn: toggleGameSound, always: true, tip: 'Musica ed effetti sì / no (tasto M)' });
@@ -394,6 +527,10 @@
 
   function selectStory(id) {
     if (currentStoryId === id) return;
+    if (id === 'maya' && !mainStoryComplete) {
+      S.note = { text: 'Completa prima l’avventura del Faro: poi si sbloccherà l’Isola Maya!', left: 5 };
+      return;
+    }
     currentStoryId = id;
     S.confirmNew = false;
     try { localStorage.setItem('pernacchia-current-story', currentStoryId); } catch (e) {}
@@ -454,7 +591,7 @@
     drawBackdrop(false);
     // Story Selector Tabs
     button(180, 24, 290, 44, '🏝️ 1. Faro di Pernacchia', { fn: () => selectStory('pernacchia') }, { active: currentStoryId === 'pernacchia', size: 18 });
-    button(490, 24, 290, 44, '🌴 2. L\'Isola Maya', { fn: () => selectStory('maya') }, { active: currentStoryId === 'maya', size: 18 });
+    button(490, 24, 290, 44, '🌴 2. L\'Isola Maya', { fn: () => selectStory('maya') }, { active: currentStoryId === 'maya', disabled: !mainStoryComplete, size: 18 });
 
     if (currentStoryId === 'maya') {
       ctx.save();
@@ -486,6 +623,8 @@
     button(190, 400, 220, 38, '↗ Condividi / sostieni', { fn: () => { S.mode = 'support'; } }, { size: 18 });
     button(420, 400, 190, 38, '⬇ Installa il gioco', { fn: installGame }, { size: 18 });
     button(620, 400, 150, 38, '✕ Chiudi', { fn: closeGame }, { size: 18 });
+    button(780, 400, 160, 38, language === 'it' ? '🌐 Lingua: IT' : '🌐 English (test)', { fn: toggleLanguage }, { size: 17 });
+    if (!mainStoryComplete) text('Completa il Faro per sbloccare l’Isola Maya', W / 2, 440, { size: 16, color: '#ffe9a8', lw: 4 });
   }
 
   function drawSupport() {
@@ -544,6 +683,7 @@
       [Sound.isSoundMuted() ? '🔇 Musica ed effetti spenti' : '🎵 Musica ed effetti accesi', toggleGameSound],
       [Sound.isReading() ? '🗣 Frasi lette: sì' : '🗣 Frasi lette: no', toggleRead],
       ['⛶ Schermo intero', toggleFull],
+      [language === 'it' ? '🌐 Lingua: Italiano' : '🌐 Language: English (test)', toggleLanguage],
       ['🌴 Cambia storia (salva ed esci)', () => { S.mode = 'title'; Sound.music(currentStoryId === 'maya' ? 'maya_spiaggia' : 'mare'); }],
       ['Torna al titolo (salva)', () => location.reload()],
       [S.confirmNew ? 'Sicuro? Cancella tutto!' : 'Ricomincia da capo', () => { if (!S.confirmNew) S.confirmNew = true; else { clearSave(); location.reload(); } }],
@@ -575,6 +715,7 @@
       if (S.mode === 'menu') { S.zones = []; drawMenu(); }
     }
     if (S.fade > 0) { ctx.fillStyle = 'rgba(0,0,0,' + S.fade + ')'; ctx.fillRect(0, 0, W, S.mode === 'play' ? SCENE_H : H); }
+    drawVoiceDownload();
     drawNote();
   }
 
@@ -586,6 +727,10 @@
   canvas.addEventListener('contextmenu',(ev) => ev.preventDefault());
   window.addEventListener('keydown', (ev) => {
     const k = ev.key.toLowerCase();
+    if (S.voiceDownload) {
+      if (k === 'escape') { cancelVoiceDownload(); ev.preventDefault(); }
+      return;
+    }
     if (k === 'm') toggleGameSound();
     else if (k === 'v') toggleRead();
     else if (k === 'f') toggleFull();
@@ -632,6 +777,8 @@
   // Handle for automatic tests: advance time by hand, skip waits, act without the mouse.
   window.__adv = {
     S, getStory, selectStory, start: startGame, clearSave, loadSave, click,
+    toggleLanguage, toggleRead, end: io.ending, language: () => language, mainStoryComplete: () => mainStoryComplete,
+    currentStoryId: () => currentStoryId,
     step(dt, times) { for (let i = 0; i < (times || 1); i++) update(dt); render(); },
     fast(on) { S.fast = on; },
     act: (verb, id, item) => S.game.act(verb, id, item),

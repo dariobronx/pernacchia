@@ -20,6 +20,7 @@ const APP_FILES = [
   './assets/icon-192.png',
   './assets/icon-512.png',
 ];
+const voiceDownloads = new Map();
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -37,6 +38,66 @@ self.addEventListener('activate', (event) => {
         .map((key) => caches.delete(key))))
       .then(() => self.clients.claim()),
   );
+});
+
+self.addEventListener('message', (event) => {
+  const message = event.data;
+  if (!message || typeof message.requestId !== 'string') return;
+
+  if (message.type === 'cancel-voice-download') {
+    const active = voiceDownloads.get(message.requestId);
+    if (active) active.abort();
+    return;
+  }
+  if (message.type !== 'download-voices' || !Array.isArray(message.ids) || !event.source) return;
+
+  const source = event.source;
+  const controller = new AbortController();
+  voiceDownloads.set(message.requestId, controller);
+  event.waitUntil((async () => {
+    let completed = 0;
+    try {
+      const cache = await caches.open(CACHE_NAME);
+      const urls = message.ids.map((id) => new URL('./voice/' + encodeURIComponent(id) + '.mp3', self.registration.scope).href);
+      const cached = await Promise.all(urls.map((url) => cache.match(url)));
+      const missing = urls.filter((url, index) => !cached[index]);
+      completed = urls.length - missing.length;
+      source.postMessage({ type: 'voice-download-progress', requestId: message.requestId, completed, total: urls.length });
+
+      let next = 0, failure = null;
+      const workers = Array.from({ length: Math.min(4, missing.length) }, async () => {
+        while (!controller.signal.aborted) {
+          const index = next++;
+          if (index >= missing.length) return;
+          try {
+            const response = await fetch(missing[index], { signal: controller.signal });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            await cache.put(missing[index], response);
+            completed++;
+            source.postMessage({ type: 'voice-download-progress', requestId: message.requestId, completed, total: urls.length });
+          } catch (error) {
+            if (!controller.signal.aborted) {
+              failure = error;
+              controller.abort();
+            }
+            return;
+          }
+        }
+      });
+      await Promise.all(workers);
+      if (failure) {
+        source.postMessage({ type: 'voice-download-error', requestId: message.requestId, completed });
+      } else if (controller.signal.aborted) {
+        source.postMessage({ type: 'voice-download-cancelled', requestId: message.requestId, completed });
+      } else {
+        source.postMessage({ type: 'voice-download-complete', requestId: message.requestId, completed, total: urls.length });
+      }
+    } catch (error) {
+      source.postMessage({ type: 'voice-download-error', requestId: message.requestId, completed });
+    } finally {
+      voiceDownloads.delete(message.requestId);
+    }
+  })());
 });
 
 self.addEventListener('fetch', (event) => {

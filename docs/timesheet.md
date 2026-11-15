@@ -3,8 +3,8 @@
 > [!summary]
 > **What:** time spent on the adventure game.
 > **Impact:** two adventures; the Maya story and its automatic walkthrough are complete.
-> **Open points:** the source repository is public; GitHub Pages is not enabled yet. Support/ad providers remain unchosen.
-> **Next step:** enable Pages and share the permanent HTTPS address.
+> **Open points:** the English option is a test; support/ad providers remain unchosen.
+> **Next step:** play-test the new download, unlock and language controls.
 
 | Date | Work | Hours (approx.) |
 |------|------|-----------------|
@@ -25,3 +25,4 @@
 | 2026-11-15 | Temple puzzle feedback: spoken press confirmations and highlighted selected discs | 0.2 |
 | 2026-11-15 | Installable offline PWA shell, sharing menu and opt-in support placeholders | 0.75 |
 | 2026-11-15 | Published reviewed source to the public GitHub repository; left Pages activation to the owner | 0.25 |
+| 2026-11-15 | Added test-English mode, first-story unlock, clearer Maya props, prominent help, voice download progress/cancel and licensing review | 1.0 |

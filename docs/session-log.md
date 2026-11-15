@@ -2,9 +2,9 @@
 
 > [!summary]
 > **What:** diary of the work sessions on both adventures.
-> **Impact:** the source is public at https://github.com/dariobronx/pernacchia; the lighthouse adventure has two chapters (13 rooms, 27 objects), and the Maya adventure can be finished from start to end (proved by the automatic test).
-> **Open points:** no real play-test by a child or tablet/touch check.
-> **Next step:** play-test on a phone or tablet.
+> **Impact:** the game is public at https://dariobronx.github.io/pernacchia/; the lighthouse adventure has two chapters (13 rooms, 27 objects), and the Maya adventure can be finished from start to end (proved by the automatic test).
+> **Open points:** the Kokoro voice-profile permissions are not fully documented; no child or tablet play-test yet.
+> **Next step:** confirm voice-use rights before commercial use, then play-test on a phone or tablet.
 
 ## 2026-11-13
 
@@ -77,16 +77,16 @@
 
 ## 2026-11-15 (PWA and voluntary support)
 
-- Added the PWA manifest, local phone/tablet icons and a same-origin service worker. It caches the app shell for offline use and caches voice recordings only after they are played.
+- Added the PWA manifest, local phone/tablet icons and a same-origin service worker. It caches the app shell for offline use and caches voice recordings only after the player asks to hear or download them.
 - Added title-menu actions to install, close, share through the system chooser, email or WhatsApp. External sharing apps open only after the player selects that option; a public HTTPS address is required.
 - Added a support page with the requested wording: “Per supportare ulteriormente lo sviluppo del gioco e di altri giochi in futuro.” Coffee support and rewarded ads are visibly inactive until their destination/service is chosen; no ad or external payment starts automatically.
-- Added automatic checks for PWA assets and the sharing/support controls. Publishing the source does not activate the Pages website; that still needs to be enabled in repository settings.
+- Added automatic checks for PWA assets and the sharing/support controls. GitHub Pages is enabled at https://dariobronx.github.io/pernacchia/.
 
 ## 2026-11-15 (public source repository)
 
 - Published the reviewed game source to https://github.com/dariobronx/pernacchia on the `main` branch.
 - The 15 automatic tests passed before publication. Private IDE files and the local voice-generation tool were excluded.
-- GitHub Pages is still disabled; the owner must enable it in **Settings → Pages**, using branch `main` and folder `/(root)`, to get the public game link.
+- Enabled GitHub Pages from branch `main` and folder `/(root)`; verified the public game page responds over HTTPS.
 
 ## Q&A
 
@@ -96,9 +96,7 @@ Yes. The biggest next step is replacing the simple shape-built backdrops with si
 
 ### Is the published game clear of copyright and licensing risks?
 
-The tracked project contains code-drawn art and code-generated music, with no imported font or image library found; its app icons and synthetic voice recordings are the main bundled media. The official Kokoro model page describes its weights as Apache-licensed, but that does not by itself settle the rights for generated recordings or voice identities. The game repository has no `LICENSE` file, so publishing its source does not grant a general reuse license. This is a practical review, not a legal guarantee.
-
-References: https://huggingface.co/hexgrad/Kokoro-82M and https://github.com/dariobronx/pernacchia
+The game now states that all rights are reserved. A detailed source-based review of Kokoro's Apache license, its Italian voice profiles, generated MP3s and the Italian Copyright Act is in `docs/voice-licensing.md`. The voice profiles are not explicitly linked to named speakers in the reviewed materials, so those sources do not guarantee every right in the recordings.
 
 ### Can the characters and interface match the Maya backgrounds, and what were the unclear shapes?
 
@@ -106,7 +104,15 @@ The jungle used clusters of overlapping oval shapes as shorthand for leaves; the
 
 ### What is needed before friends can install and share the game?
 
-The source can be public on GitHub while the Pages website is still inactive. Enable Pages in the repository settings to get the permanent HTTPS address. The app shell works offline after it is cached, while voice recordings are saved one by one as they are played. Sharing opens only after the player taps a sharing option.
+The source and game are public at https://dariobronx.github.io/pernacchia/. The app shell works offline after it is cached; voice recordings are downloaded only after the player asks, with visible progress and a cancel option. Sharing opens only after the player taps a sharing option.
+
+### Can the second story be played immediately?
+
+No. The Maya adventure stays visible but locked until the lighthouse story is completed. Completion is remembered in the same browser and device.
+
+### What does the English test option translate?
+
+Nothing yet. It is a test selection only: menus and story stay Italian, and the voice button explains that spoken audio is currently Italian-only.
 
 ### Why are coffee support and ads not active yet?
 
