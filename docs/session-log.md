@@ -2,7 +2,7 @@
 
 > [!summary]
 > **What:** diary of the work sessions on both adventures.
-> **Impact:** the lighthouse adventure has two chapters (13 rooms, 27 objects); the Maya adventure has six rooms and can be finished from start to end (proved by the automatic test).
+> **Impact:** the source is public at https://github.com/dariobronx/pernacchia; the lighthouse adventure has two chapters (13 rooms, 27 objects), and the Maya adventure can be finished from start to end (proved by the automatic test).
 > **Open points:** GitHub Pages is not enabled yet; no real play-test by a child or tablet/touch check.
 > **Next step:** enable Pages for the public repository, then play-test on a phone or tablet.
 
@@ -81,6 +81,12 @@
 - Added title-menu actions to install, close, share through the system chooser, email or WhatsApp. External sharing apps open only after the player selects that option; a public HTTPS address is required.
 - Added a support page with the requested wording: “Per supportare ulteriormente lo sviluppo del gioco e di altri giochi in futuro.” Coffee support and rewarded ads are visibly inactive until their destination/service is chosen; no ad or external payment starts automatically.
 - Added automatic checks for PWA assets and the sharing/support controls. Publishing the source does not activate the Pages website; that still needs to be enabled in repository settings.
+
+## 2026-11-15 (public source repository)
+
+- Published the reviewed game source to https://github.com/dariobronx/pernacchia on the `main` branch.
+- The 15 automatic tests passed before publication. Private IDE files and the local voice-generation tool were excluded.
+- GitHub Pages is still disabled; the owner must enable it in **Settings → Pages**, using branch `main` and folder `/(root)`, to get the public game link.
 
 ## Q&A
 

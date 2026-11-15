@@ -3,7 +3,7 @@
 > [!summary]
 > **What:** time spent on the adventure game.
 > **Impact:** two adventures; the Maya story and its automatic walkthrough are complete.
-> **Open points:** GitHub Pages is not enabled yet; support/ad providers remain unchosen.
+> **Open points:** the source repository is public; GitHub Pages is not enabled yet. Support/ad providers remain unchosen.
 > **Next step:** enable Pages and share the permanent HTTPS address.
 
 | Date | Work | Hours (approx.) |
@@ -24,3 +24,4 @@
 | 2026-11-15 | Background detail pass: richer water, stone, grass, wood and interior textures | 0.25 |
 | 2026-11-15 | Temple puzzle feedback: spoken press confirmations and highlighted selected discs | 0.2 |
 | 2026-11-15 | Installable offline PWA shell, sharing menu and opt-in support placeholders | 0.75 |
+| 2026-11-15 | Published reviewed source to the public GitHub repository; left Pages activation to the owner | 0.25 |
