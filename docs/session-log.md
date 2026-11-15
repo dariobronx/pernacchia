@@ -3,8 +3,8 @@
 > [!summary]
 > **What:** diary of the work sessions on both adventures.
 > **Impact:** the source is public at https://github.com/dariobronx/pernacchia; the lighthouse adventure has two chapters (13 rooms, 27 objects), and the Maya adventure can be finished from start to end (proved by the automatic test).
-> **Open points:** GitHub Pages is not enabled yet; no real play-test by a child or tablet/touch check.
-> **Next step:** enable Pages for the public repository, then play-test on a phone or tablet.
+> **Open points:** no real play-test by a child or tablet/touch check.
+> **Next step:** play-test on a phone or tablet.
 
 ## 2026-11-13
 
@@ -93,6 +93,12 @@
 ### Can the graphics be improved further?
 
 Yes. The biggest next step is replacing the simple shape-built backdrops with six original, locally stored illustrations made for the game's full display size. Keep characters, animation and click targets in the current code, and build each background with consistent perspective, light and texture.
+
+### Is the published game clear of copyright and licensing risks?
+
+The tracked project contains code-drawn art and code-generated music, with no imported font or image library found; its app icons and synthetic voice recordings are the main bundled media. The official Kokoro model page describes its weights as Apache-licensed, but that does not by itself settle the rights for generated recordings or voice identities. The game repository has no `LICENSE` file, so publishing its source does not grant a general reuse license. This is a practical review, not a legal guarantee.
+
+References: https://huggingface.co/hexgrad/Kokoro-82M and https://github.com/dariobronx/pernacchia
 
 ### Can the characters and interface match the Maya backgrounds, and what were the unclear shapes?
 
