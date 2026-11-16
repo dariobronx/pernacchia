@@ -2,7 +2,7 @@
 
 > [!summary]
 > **What:** diary of the work sessions on all three adventures.
-> **Impact:** the game is public at https://dariobronx.github.io/pernacchia/; install feedback now reports the browser prompt, cancellation and completion.
+> **Impact:** the public game reports install status and its layout now fits landscape phone screens.
 > **Open points:** the Kokoro voice-profile permissions are not fully documented; review the new Christmas scenes on a phone or tablet.
 > **Next step:** check touch layout on a phone or tablet.
 
@@ -118,6 +118,7 @@
 
 - Added visible messages when installation starts, is accepted, is cancelled or completes. Browsers do not expose a numeric installation-progress percentage to the game; refreshed the offline cache.
 - Added automatic coverage for accepted, cancelled and completed installation flows.
+- Made the game use the available landscape screen area, respect device safe areas, ask portrait-phone users to rotate, and request landscape for installed apps; refreshed the offline cache.
 
 ## Q&A
 
@@ -180,3 +181,7 @@ GitHub Pages does not provide built-in visitor, download or app-install counts. 
 ### Can the game show installation progress?
 
 It can show the browser prompt, whether the player accepts or cancels, and the final installed confirmation. The browser does not share a percentage or detailed installation steps with the game.
+
+### Does the game fit a phone screen?
+
+The game is designed for landscape. Installed apps request landscape where the device supports it; in portrait, a phone shows a rotate prompt. The page scales to the available area and keeps clear of notches and rounded screen edges.

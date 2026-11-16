@@ -2,7 +2,7 @@
 
 > [!summary]
 > **What:** time spent on the adventure game.
-> **Impact:** three adventures; install feedback now shows each state the browser reports.
+> **Impact:** three adventures; install feedback and landscape phone layout are improved.
 > **Open points:** recorded voices still use the original hero name; support/ad providers remain unchosen.
 > **Next step:** test touch layout on a phone or tablet.
 
@@ -35,3 +35,4 @@
 | 2026-11-15 | Reworked Christmas shop-floor perspective to remove noisy checkerboard tiles | 0.1 |
 | 2026-11-15 | Added geometric facets to shared drawing helpers across all three adventures | 0.25 |
 | 2026-11-16 | Added installation prompt, acceptance, cancellation and completion feedback with tests | 0.2 |
+| 2026-11-16 | Adapted the game to landscape phone screens, safe areas and portrait rotation prompt | 0.25 |

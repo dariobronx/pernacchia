@@ -11,6 +11,7 @@ test('PWA manifest points only to local install icons', () => {
   assert.strictEqual(manifest.name, 'Le avventure');
   assert.strictEqual(manifest.short_name, 'Avventure');
   assert.strictEqual(manifest.display, 'standalone');
+  assert.strictEqual(manifest.orientation, 'landscape');
   assert.strictEqual(manifest.start_url, './');
   assert.strictEqual(manifest.scope, './');
   assert.ok(manifest.icons.length >= 2);
@@ -20,9 +21,20 @@ test('PWA manifest points only to local install icons', () => {
   }
 });
 
+test('mobile layout fills the available screen and guides portrait-phone users to rotate', () => {
+  const html = read('index.html');
+  const css = read('css/style.css');
+  assert.match(html, /viewport-fit=cover/);
+  assert.match(html, /id="rotate-prompt"/);
+  assert.match(css, /height: 100dvh/);
+  assert.match(css, /env\(safe-area-inset-left\)/);
+  assert.match(css, /orientation: portrait/);
+  assert.match(css, /aspect-ratio: 16 \/ 9/);
+});
+
 test('offline app shell contains its local files but does not preload voice recordings', () => {
   const serviceWorker = read('service-worker.js');
-  assert.match(serviceWorker, /CACHE_NAME = 'fili-pwa-v10'/);
+  assert.match(serviceWorker, /CACHE_NAME = 'fili-pwa-v11'/);
   const shell = serviceWorker.match(/const APP_FILES = \[([\s\S]*?)\];/);
   assert.ok(shell, 'app shell list exists');
   const files = [...shell[1].matchAll(/'([^']+)'/g)].map((match) => match[1]);

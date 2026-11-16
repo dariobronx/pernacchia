@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Le avventure</title>
   <meta name="theme-color" content="#0a0818">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,6 +15,7 @@
 <body>
   <div id="stage">
     <canvas id="game" width="960" height="540"></canvas>
+    <div id="rotate-prompt" role="status">Ruota lo smartphone in orizzontale per giocare.</div>
     <form id="name-entry" hidden>
       <label for="player-name-input">Come vuoi chiamarti?</label>
       <input id="player-name-input" name="player-name" maxlength="20" autocomplete="given-name" required>
