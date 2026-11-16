@@ -2,7 +2,7 @@
 
 > [!summary]
 > **What:** diary of the work sessions on all three adventures.
-> **Impact:** the public game reports install status and its layout now fits landscape phone screens.
+> **Impact:** the public game reports install status and fills landscape phone screens.
 > **Open points:** the Kokoro voice-profile permissions are not fully documented; review the new Christmas scenes on a phone or tablet.
 > **Next step:** check touch layout on a phone or tablet.
 
@@ -119,6 +119,7 @@
 - Added visible messages when installation starts, is accepted, is cancelled or completes. Browsers do not expose a numeric installation-progress percentage to the game; refreshed the offline cache.
 - Added automatic coverage for accepted, cancelled and completed installation flows.
 - Made the game use the available landscape screen area, respect device safe areas, ask portrait-phone users to rotate, and request landscape for installed apps; refreshed the offline cache.
+- Removed side bars on short landscape phone screens by filling the full available area; refreshed the offline cache to v12.
 
 ## Q&A
 
@@ -185,3 +186,5 @@ It can show the browser prompt, whether the player accepts or cancels, and the f
 ### Does the game fit a phone screen?
 
 The game is designed for landscape. Installed apps request landscape where the device supports it; in portrait, a phone shows a rotate prompt. The page scales to the available area and keeps clear of notches and rounded screen edges.
+
+On short landscape screens, the game fills the full width and height instead of leaving side bars; this slightly widens the picture to keep all scene and controls visible.

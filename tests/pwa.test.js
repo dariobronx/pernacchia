@@ -30,11 +30,13 @@ test('mobile layout fills the available screen and guides portrait-phone users t
   assert.match(css, /env\(safe-area-inset-left\)/);
   assert.match(css, /orientation: portrait/);
   assert.match(css, /aspect-ratio: 16 \/ 9/);
+  assert.match(css, /orientation: landscape\) and \(max-height: 600px\)/);
+  assert.match(css, /width: 100%;\s+height: 100%;\s+max-height: none;\s+aspect-ratio: auto;/);
 });
 
 test('offline app shell contains its local files but does not preload voice recordings', () => {
   const serviceWorker = read('service-worker.js');
-  assert.match(serviceWorker, /CACHE_NAME = 'fili-pwa-v11'/);
+  assert.match(serviceWorker, /CACHE_NAME = 'fili-pwa-v12'/);
   const shell = serviceWorker.match(/const APP_FILES = \[([\s\S]*?)\];/);
   assert.ok(shell, 'app shell list exists');
   const files = [...shell[1].matchAll(/'([^']+)'/g)].map((match) => match[1]);
