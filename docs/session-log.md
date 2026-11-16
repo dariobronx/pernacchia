@@ -2,7 +2,7 @@
 
 > [!summary]
 > **What:** diary of the work sessions on all three adventures.
-> **Impact:** the public game reports install status and fills landscape phone screens.
+> **Impact:** the public game reports install status, fills phone screens, and has louder music and clearer dialogue choices.
 > **Open points:** the Kokoro voice-profile permissions are not fully documented; review the new Christmas scenes on a phone or tablet.
 > **Next step:** check touch layout on a phone or tablet.
 
@@ -121,6 +121,12 @@
 - Made the game use the available landscape screen area, respect device safe areas, ask portrait-phone users to rotate, and request landscape for installed apps; refreshed the offline cache.
 - Removed side bars on short landscape phone screens by filling the full available area; refreshed the offline cache to v12.
 
+## 2026-11-16 (phone audio and dialogue choices)
+
+- Increased only the music level; effects stay unchanged, and the music still lowers while recorded speech plays. Refreshed the offline cache to v13.
+- Expanded dialogue choices across the whole control panel, with larger text, visible choice cards and larger touch areas.
+- Added automatic checks for audio levels and the dialogue choice layout.
+
 ## Q&A
 
 ### Can the graphics be improved further?
@@ -188,3 +194,7 @@ It can show the browser prompt, whether the player accepts or cancels, and the f
 The game is designed for landscape. Installed apps request landscape where the device supports it; in portrait, a phone shows a rotate prompt. The page scales to the available area and keeps clear of notches and rounded screen edges.
 
 On short landscape screens, the game fills the full width and height instead of leaving side bars; this slightly widens the picture to keep all scene and controls visible.
+
+### Why was the music quiet, and are dialogue choices easier to tap?
+
+The music was mixed at a low level before reaching the phone. Its level is now over twice as high while sound effects stay unchanged; music still drops while a recorded voice plays. Dialogue options now use the full control panel, with larger text, clear cards and larger touch targets.

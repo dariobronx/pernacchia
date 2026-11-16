@@ -102,6 +102,14 @@ test('install button reports the browser prompt, cancellation and completion', a
   assert.match(cancelled.api.S.note.text, /Installazione annullata/);
 });
 
+test('conversation choices use the full panel for readable touch targets', () => {
+  const engine = read('js/engine.js');
+  assert.match(engine, /const n = S\.choices\.list\.length, gap = 3, lh = \(112 - gap \* \(n - 1\)\) \/ n/);
+  assert.match(engine, /ctx\.roundRect\(12, y, W - 24, lh, 6\)/);
+  assert.match(engine, /const size = lh >= 48 \? 24 : lh >= 32 \? 21 : lh >= 22 \? 18 : 16/);
+  assert.match(engine, /S\.zones\.push\(\{ x: 0, y, w: W, h: lh, choice: o\.id \}\)/);
+});
+
 test('Maya story stays visible but cannot be selected until the lighthouse is completed', async () => {
   const storage = new Map([['pernacchia-current-story', 'maya']]);
   const locked = createEngine(storage);

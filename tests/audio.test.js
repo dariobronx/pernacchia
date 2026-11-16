@@ -42,7 +42,7 @@ test('background music and spoken lines have independent controls', () => {
 
   audio.music('mare');
   audio.unlock();
-  assert.strictEqual(gains[1].gain.value, 0.32);
+  assert.strictEqual(gains[1].gain.value, 0.75);
   assert.strictEqual(audio.isReading(), true);
 
   assert.strictEqual(audio.toggleSoundMute(), true);
@@ -54,10 +54,10 @@ test('background music and spoken lines have independent controls', () => {
 
   assert.strictEqual(audio.toggleSoundMute(), false);
   assert.strictEqual(gains[0].gain.value, 0.5);
-  assert.strictEqual(gains[1].gain.value, 0.09);
+  assert.strictEqual(gains[1].gain.value, 0.2);
   assert.strictEqual(audios[0].paused, false);
   audio.toggleRead();
   assert.strictEqual(audio.isReading(), false);
   assert.strictEqual(audios[0].paused, true);
-  assert.strictEqual(gains[1].gain.value, 0.32);
+  assert.strictEqual(gains[1].gain.value, 0.75);
 });

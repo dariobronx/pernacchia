@@ -588,10 +588,13 @@
     ctx.fillStyle = mayaTheme() ? '#c5a367' : winterTheme() ? '#d9b866' : '#e0a030'; ctx.fillRect(0, SCENE_H, W, 2);
     ctx.fillStyle = mayaTheme() ? '#72805d' : winterTheme() ? '#a4474c' : '#5a4a7a'; ctx.fillRect(0, SCENE_H + 2, W, 1);
     if (S.choices) {
-      const n = S.choices.list.length, lh = Math.min(24, 112 / n);
+      const n = S.choices.list.length, gap = 3, lh = (112 - gap * (n - 1)) / n;
       S.choices.list.forEach((o, i) => {
-        const y = SCENE_H + 5 + i * lh, over = S.mouse.y >= y && S.mouse.y < y + lh && S.mouse.y >= SCENE_H;
-        text((i + 1) + '.  ' + o.text, 24, y + lh / 2, { size: n > 5 ? 16 : 18, align: 'left', color: over ? '#ffffff' : (mayaTheme() ? '#ead9b5' : '#c9a8ff'), outline: false });
+        const y = SCENE_H + 4 + i * (lh + gap), over = S.mouse.x >= 12 && S.mouse.x <= W - 12 && S.mouse.y >= y && S.mouse.y < y + lh;
+        ctx.beginPath(); ctx.roundRect(12, y, W - 24, lh, 6);
+        ctx.fillStyle = over ? 'rgba(255,224,102,0.36)' : 'rgba(255,255,255,0.1)'; ctx.fill();
+        const size = lh >= 48 ? 24 : lh >= 32 ? 21 : lh >= 22 ? 18 : 16;
+        text((i + 1) + '.  ' + o.text, W / 2, y + lh / 2, { size, color: over ? '#ffffff' : (mayaTheme() ? '#ead9b5' : '#eee5ff'), outline: false });
         S.zones.push({ x: 0, y, w: W, h: lh, choice: o.id });
       });
       return;

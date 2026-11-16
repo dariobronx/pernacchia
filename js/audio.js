@@ -3,6 +3,7 @@
 (function () {
   'use strict';
   const SOUND_MUTE_KEY = 'pernacchia-sound-muted';
+  const MUSIC_VOLUME = 0.75, MUSIC_DUCK_VOLUME = 0.2;
   let ctx = null, master = null, musicGain = null, soundMuted = false, mood = null, timer = null, nextTime = 0, stepNo = 0;
   try {
     const savedSoundMute = localStorage.getItem(SOUND_MUTE_KEY);
@@ -17,7 +18,7 @@
     if (!AC) return;
     ctx = new AC();
     master = ctx.createGain(); master.gain.value = soundMuted ? 0 : 0.5; master.connect(ctx.destination);
-    musicGain = ctx.createGain(); musicGain.gain.value = 0.32; musicGain.connect(master);
+    musicGain = ctx.createGain(); musicGain.gain.value = MUSIC_VOLUME; musicGain.connect(master);
     if (mood) startMusic();
   }
 
@@ -155,7 +156,7 @@
     baccala: 0.93, ammiraglio: 0.86, pirati: 1.04, sbadiglio: 0.9, scheletro: 1.15, finestra: 0.95, tricheco: 0.82, cabina: 0.95, vedetta: 1.12, capitano: 0.88, ciurma: 1 };
   let reading = false, current = null;
   try { reading = localStorage.getItem(READ_KEY) === '1'; } catch (err) { reading = false; }
-  const duck = (on) => { if (musicGain) musicGain.gain.value = on ? 0.09 : 0.32; };
+  const duck = (on) => { if (musicGain) musicGain.gain.value = on ? MUSIC_DUCK_VOLUME : MUSIC_VOLUME; };
   // Plays the recorded voice of `text`. Returns false when nothing will be heard.
   function speak(who, text, onEnd) {
     if (!reading || !hasVoice) return false;
