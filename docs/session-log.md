@@ -2,7 +2,7 @@
 
 > [!summary]
 > **What:** diary of the work sessions on all three adventures.
-> **Impact:** the game is public at https://dariobronx.github.io/pernacchia/; lighthouse, Maya and Christmas stories can each be tested from the title screen.
+> **Impact:** the game is public at https://dariobronx.github.io/pernacchia/; install feedback now reports the browser prompt, cancellation and completion.
 > **Open points:** the Kokoro voice-profile permissions are not fully documented; review the new Christmas scenes on a phone or tablet.
 > **Next step:** check touch layout on a phone or tablet.
 
@@ -114,6 +114,11 @@
 - Simplified the shop floors into a quieter one-point tile grid; removed the high-contrast checkerboard that obscured the perspective and bumped the offline cache to v8.
 - Added two subtle geometric facets to the shared rectangle, ellipse and polygon drawing helpers, enriching the main forms across all three adventures; bumped the offline cache to v9.
 
+## 2026-11-16 (install feedback)
+
+- Added visible messages when installation starts, is accepted, is cancelled or completes. Browsers do not expose a numeric installation-progress percentage to the game; refreshed the offline cache.
+- Added automatic coverage for accepted, cancelled and completed installation flows.
+
 ## Q&A
 
 ### Can the graphics be improved further?
@@ -171,3 +176,7 @@ Browsers often prevent a website from closing a tab it did not open. The button 
 ### Can GitHub Pages count page visits, downloads or installs?
 
 GitHub Pages does not provide built-in visitor, download or app-install counts. GitHub's repository traffic page has limited counts for visits and clones of the source repository, not reliable counts for the Pages game itself. More detailed measurement would require a separate analytics service; none has been added.
+
+### Can the game show installation progress?
+
+It can show the browser prompt, whether the player accepts or cancels, and the final installed confirmation. The browser does not share a percentage or detailed installation steps with the game.

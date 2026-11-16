@@ -9,6 +9,7 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
 function createEngine(storage = new Map(), hostname = 'game.test', protocol = 'https:') {
   const listeners = {};
+  const windowListeners = {};
   const nameForm = { hidden: true, addEventListener(type, listener) { listeners['name-' + type] = listener; } };
   const nameInput = { value: '', focus() {} };
   const appTitle = { content: '' };
@@ -33,7 +34,7 @@ function createEngine(storage = new Map(), hostname = 'game.test', protocol = 'h
     AdvArt: { rooms: {} },
     AdvAudio: sound,
     AdvVoiceIndex: { first: 1, second: 1 },
-    addEventListener() {},
+    addEventListener(type, listener) { windowListeners[type] = listener; },
   };
   const serviceWorker = {
     controller: {},
@@ -66,6 +67,7 @@ function createEngine(storage = new Map(), hostname = 'game.test', protocol = 'h
     api: window.__adv,
     storage,
     listeners,
+    windowListeners,
     soundState: () => ({ reading, toggleCount }),
     postedMessage: () => postedMessage,
     reloadCount: () => reloadCount,
@@ -74,6 +76,31 @@ function createEngine(storage = new Map(), hostname = 'game.test', protocol = 'h
     appTitle,
   };
 }
+
+test('install button reports the browser prompt, cancellation and completion', async () => {
+  const game = createEngine();
+  game.windowListeners.beforeinstallprompt({
+    preventDefault() {},
+    prompt: () => Promise.resolve(),
+    userChoice: Promise.resolve({ outcome: 'accepted' }),
+  });
+  game.api.installGame();
+  assert.match(game.api.S.note.text, /Completa l’installazione dalla finestra del browser/);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.match(game.api.S.note.text, /attendo la fine dell’installazione/);
+  game.windowListeners.appinstalled();
+  assert.match(game.api.S.note.text, /Gioco installato/);
+
+  const cancelled = createEngine();
+  cancelled.windowListeners.beforeinstallprompt({
+    preventDefault() {},
+    prompt: () => Promise.resolve(),
+    userChoice: Promise.resolve({ outcome: 'dismissed' }),
+  });
+  cancelled.api.installGame();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.match(cancelled.api.S.note.text, /Installazione annullata/);
+});
 
 test('Maya story stays visible but cannot be selected until the lighthouse is completed', async () => {
   const storage = new Map([['pernacchia-current-story', 'maya']]);

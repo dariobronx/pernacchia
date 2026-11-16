@@ -2,7 +2,7 @@
 
 > [!summary]
 > **What:** time spent on the adventure game.
-> **Impact:** three adventures; Christmas scenes and one-time control tips are improved.
+> **Impact:** three adventures; install feedback now shows each state the browser reports.
 > **Open points:** recorded voices still use the original hero name; support/ad providers remain unchosen.
 > **Next step:** test touch layout on a phone or tablet.
 
@@ -34,3 +34,4 @@
 | 2026-11-15 | Improved Christmas shop floors and made displayed goods clearer | 0.35 |
 | 2026-11-15 | Reworked Christmas shop-floor perspective to remove noisy checkerboard tiles | 0.1 |
 | 2026-11-15 | Added geometric facets to shared drawing helpers across all three adventures | 0.25 |
+| 2026-11-16 | Added installation prompt, acceptance, cancellation and completion feedback with tests | 0.2 |

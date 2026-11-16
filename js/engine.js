@@ -682,8 +682,10 @@
     if (installPrompt) {
       const prompt = installPrompt;
       installPrompt = null;
+      S.note = { text: 'Completa l’installazione dalla finestra del browser.', left: 30 };
       prompt.prompt().then(() => prompt.userChoice).then((choice) => {
         if (choice.outcome === 'dismissed') S.note = { text: 'Installazione annullata; puoi farla quando vuoi.', left: 4 };
+        else S.note = { text: 'Richiesta confermata: attendo la fine dell’installazione.', left: 8 };
       }).catch(() => {
         S.note = { text: 'Non riesco ad avviare l’installazione da questo browser.', left: 5 };
       });
@@ -978,7 +980,7 @@
 
   // Handle for automatic tests: advance time by hand, skip waits, act without the mouse.
   window.__adv = {
-    S, getStory, selectStory, start: startGame, beginStarting, clearSave, loadSave, click,
+    S, getStory, selectStory, start: startGame, beginStarting, clearSave, loadSave, click, installGame,
     setPlayerName, playerName: () => playerName, personalize, adjustMessageDuration,
     messageDurationOffset: () => messageDurationOffset, speechDuration,
     toggleLanguage, toggleRead, end: io.ending, language: () => language, mainStoryComplete: () => mainStoryComplete,
