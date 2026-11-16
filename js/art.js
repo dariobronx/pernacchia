@@ -6,6 +6,22 @@
   'use strict';
 
   // ---------- drawing helpers ----------
+  function polygon(c, pts, color) {
+    c.fillStyle = color; c.beginPath();
+    pts.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])));
+    c.closePath(); c.fill();
+  }
+  function facets(c, x, y, w, h, rounded) {
+    const size = Math.min(4, Math.min(w, h) * 0.42);
+    if (size < 1.25 || w * h < 16) return;
+    c.save(); c.beginPath();
+    if (rounded && c.roundRect) c.roundRect(x, y, w, h, Math.min(1.5, Math.min(w, h) * 0.3));
+    else c.rect(x, y, w, h);
+    c.clip();
+    polygon(c, [[x, y], [x + size, y], [x, y + size]], 'rgba(255,255,255,0.12)');
+    polygon(c, [[x + w, y + h], [x + w - size, y + h], [x + w, y + h - size]], 'rgba(0,0,20,0.12)');
+    c.restore();
+  }
   // Rectangle. Small ones get soft corners (people, objects); big surfaces (walls, floors, sea) stay square.
   const R = (c, col, x, y, w, h) => {
     c.fillStyle = col; x = Math.round(x); y = Math.round(y);
@@ -18,10 +34,41 @@
         c.fillStyle = g; c.fill();
       }
     } else c.fillRect(x, y, w, h);
+    facets(c, x, y, w, h, m > 0 && Math.max(w, h) <= 24);
   };
-  const B = (c, col, x, y, w, h) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), w, h); }; // always square: pieces stacked into one shape
-  const E = (c, col, x, y, rx, ry) => { c.fillStyle = col; c.beginPath(); c.ellipse(x, y, rx, ry === undefined ? rx : ry, 0, 0, 7); c.fill(); };
-  const P = (c, col, pts) => { c.fillStyle = col; c.beginPath(); pts.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]))); c.closePath(); c.fill(); };
+  const B = (c, col, x, y, w, h) => {
+    x = Math.round(x); y = Math.round(y);
+    c.fillStyle = col; c.fillRect(x, y, w, h);
+    facets(c, x, y, w, h, false);
+  }; // always square: pieces stacked into one shape
+  const E = (c, col, x, y, rx, ry) => {
+    ry = ry === undefined ? rx : ry;
+    c.fillStyle = col; c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, 7); c.fill();
+    const size = Math.min(2.5, rx * 0.55, ry * 0.55);
+    if (size < 1.2) return;
+    c.save(); c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, 7); c.clip();
+    polygon(c, [[x - size, y - size], [x + size, y - size], [x, y - ry * 0.72]], 'rgba(255,255,255,0.12)');
+    polygon(c, [[x - size, y + size], [x + size, y + size], [x, y + ry * 0.72]], 'rgba(0,0,20,0.10)');
+    c.restore();
+  };
+  const P = (c, col, pts) => {
+    polygon(c, pts, col);
+    if (pts.length < 3) return;
+    let area = 0, centerX = 0, centerY = 0;
+    pts.forEach((p, i) => {
+      const next = pts[(i + 1) % pts.length];
+      area += p[0] * next[1] - next[0] * p[1];
+      centerX += p[0]; centerY += p[1];
+    });
+    if (Math.abs(area) < 10) return;
+    centerX /= pts.length; centerY /= pts.length;
+    c.save(); c.beginPath();
+    pts.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])));
+    c.closePath(); c.clip();
+    polygon(c, [[centerX, centerY], pts[0], pts[1]], 'rgba(255,255,255,0.1)');
+    polygon(c, [[centerX, centerY], pts[Math.floor(pts.length / 2)], pts[pts.length - 1]], 'rgba(0,0,20,0.09)');
+    c.restore();
+  };
   const L = (c, col, x1, y1, x2, y2, w) => { c.strokeStyle = col; c.lineWidth = w || 1; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); };
   const grad = (c, x, y, w, h, stops) => { const g = c.createLinearGradient(0, y, 0, y + h); stops.forEach((s, i) => g.addColorStop(i / (stops.length - 1), s)); c.fillStyle = g; c.fillRect(x, y, w, h); };
   function glow(c, x, y, r, rgb, a) {
@@ -203,6 +250,10 @@
       case 'cap': half(c, hc, x, cy - 2.3, 5, 3.9, true); E(c, hc, x, cy - 6.1, 0.7);
         c.fillStyle = hc; c.beginPath(); if (d) c.roundRect(d < 0 ? x - 8.4 : x + 3.9, cy - 3.5, 4.5, 1.4, 0.7); else c.roundRect(x - 3.2, cy - 3.2, 6.4, 1.2, 0.6); c.fill();
         B(c, 'rgba(0,0,20,0.18)', x - 4.8, cy - 2.9, 9.6, 0.6); break;
+      case 'winter':
+        E(c, hc, x, cy - 5.8, 5.2, 3.6); R(c, '#f5ead9', x - 5, cy - 2.8, 10, 1.1);
+        R(c, 'rgba(255,255,255,0.35)', x - 4, cy - 7.3, 8, 0.8); E(c, '#fff3d8', x + 0.6, cy - 9.2, 1.8);
+        E(c, '#fff', x - 2.7, cy - 3, 0.45); E(c, '#fff', x + 1.5, cy - 3, 0.45); break;
       case 'bandana': half(c, hc, x, cy - 2.2, 4.9, 3.8, true); E(c, hc, x + 5.2, cy - 2, 1.3, 1); limb(c, hc, x + 5.6, cy - 1.6, x + 6.4, cy + 1.2, 1.1);
         E(c, '#fff', x - 2, cy - 4, 0.5); E(c, '#fff', x + 1.2, cy - 4.4, 0.5); E(c, '#fff', x + 3, cy - 3.2, 0.5); break;
       case 'tricorn': P(c, '#1c1c28', [[x - 7.5, cy - 2.8], [x + 7.5, cy - 2.8], [x + 4.5, cy - 5.4], [x, cy - 8.6], [x - 4.5, cy - 5.4]]); limb(c, '#1c1c28', x - 7, cy - 3, x + 7, cy - 3, 1.5); E(c, '#e8c15a', x, cy - 5.4, 1); break;
@@ -227,10 +278,18 @@
   function fili(c, x, y, scale, dir, walk, e) {
     sprCtx.clearRect(0, 0, 28, 40);
     const maya = e.g.state && e.g.state.room.indexOf('maya_') === 0;
+    const winter = e.g.state && e.g.state.room.indexOf('natale_') === 0;
     const outfit = maya
       ? Object.assign({}, FILI, { shirt: '#a85d3e', stripes: '#e0bd79', pants: '#5e4936', hair: '#443022' })
-      : FILI;
-    person(sprCtx, 14, 39, Object.assign({}, outfit, { dir, walk, noShadow: true, hat: e.g.flag('parrucca_indossata') ? 'wig' : 'cap' }), e);
+      : winter
+        ? Object.assign({}, FILI, { shirt: '#b83f48', stripes: '#f4e4cb', pants: '#344454', hat: 'winter', hatc: '#b83f48', buttons: '#f5d477', shoes: '#392d31' })
+        : FILI;
+    person(sprCtx, 14, 39, Object.assign({}, outfit, { dir, walk, noShadow: true, hat: e.g.flag('parrucca_indossata') ? 'wig' : outfit.hat }), e);
+    if (winter) {
+      R(sprCtx, '#287c87', 9.5, 23.8, 9, 2.3);
+      R(sprCtx, '#f4d28a', 10, 23.5, 1, 7);
+      P(sprCtx, '#287c87', [[9.5, 25], [11.5, 25], [11, 31], [9, 30]]);
+    }
     if (maya) {
       L(sprCtx, '#77543a', 10.5, 33, 17.5, 33, 1.1);
       L(sprCtx, '#d7b26e', 10.5, 31.7, 17.5, 31.7, 0.8);

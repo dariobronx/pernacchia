@@ -113,6 +113,9 @@
     maya_villaggio: { tempo: 0.20, base: 294, scale: 'major', wave: 'square',
       lead: [0, 2, 4, 5, 7, 5, 4, 2, 4, 2, 0, 2, 4, null, null, null, 7, 5, 4, 5, 7, 9, 7, 5, 4, 2, 0, 2, 0, null, null, null],
       bass: [0, null, 4, null, 0, null, 4, null, 3, null, 4, null, 0, null, 4, null, 0, null, 4, null, 3, null, 4, null, 3, null, 4, null, 0, null, 0, null] },
+    natale: { tempo: 0.2, base: 330, scale: 'major', wave: 'sine',
+      lead: [0, 4, 7, null, 7, 5, 4, null, 2, 5, 9, null, 9, 7, 5, null, 4, 7, 11, null, 11, 9, 7, null, 5, 9, 12, 9, 7, 4, 2, null],
+      bass: [0, null, 4, null, 0, null, 4, null, 2, null, 5, null, 2, null, 5, null, 4, null, 7, null, 4, null, 7, null, 2, null, 5, null, 0, null, 4, null] },
   };
   const pitch = (tune, step, octave) => tune.base * octave * Math.pow(2, SCALES[tune.scale][step] / 12);
   function schedule() {

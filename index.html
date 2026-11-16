@@ -2,26 +2,37 @@
 <html lang="it">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Fili: Isola Pernacchia e Isola Maya</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Le avventure</title>
   <meta name="theme-color" content="#0a0818">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Fili">
+  <meta name="apple-mobile-web-app-title" content="Le avventure">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div id="stage"><canvas id="game" width="960" height="540"></canvas></div>
+  <div id="stage">
+    <canvas id="game" width="960" height="540"></canvas>
+    <div id="rotate-prompt" role="status">Ruota lo smartphone in orizzontale per giocare.</div>
+    <form id="name-entry" hidden>
+      <label for="player-name-input">Come vuoi chiamarti?</label>
+      <input id="player-name-input" name="player-name" maxlength="20" autocomplete="given-name" required>
+      <button type="submit">Inizia</button>
+      <small>Il nome viene salvato solo su questo dispositivo.</small>
+    </form>
+  </div>
   <script src="js/core.js"></script>
   <script src="js/story.js"></script>
   <script src="js/story-maya.js"></script>
+  <script src="js/story-natale.js"></script>
   <script src="js/voicekey.js"></script>
   <script src="js/voice-index.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/art.js"></script>
   <script src="js/art-maya.js"></script>
+  <script src="js/art-natale.js"></script>
   <script src="js/engine.js"></script>
 </body>
 </html>

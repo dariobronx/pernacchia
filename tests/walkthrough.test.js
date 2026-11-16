@@ -4,6 +4,7 @@ const assert = require('node:assert');
 const Core = require('../js/core.js');
 const story = require('../js/story.js');
 const storyMaya = require('../js/story-maya.js');
+const storyNatale = require('../js/story-natale.js');
 
 // A fake "screen": records what is said and answers dialogues from a list of wanted topics.
 function makeIo(wanted) {
@@ -225,6 +226,45 @@ test('the Maya adventure can be finished', async () => {
   assert.deepStrictEqual([...wanted], [], 'all selected conversations were reached');
 });
 
+test('the Christmas adventure can be finished and saves Christmas', async () => {
+  const io = makeIo(new Set()), game = Core.createGame(storyNatale, io);
+  await game.begin();
+  await game.act('walk', 'porta_pattini');
+  await game.act('talk', 'negoziante_pattini');
+  await game.act('walk', 'uscita');
+  await game.act('walk', 'porta_pesca');
+  await game.act('talk', 'pescatore');
+  await game.act('take', 'scatola_esche');
+  await game.act('walk', 'uscita');
+  await game.act('walk', 'porta_pasticceria');
+  for (const id of ['sacchetto_farina', 'ciotola_burro', 'vasetto_miele', 'cannella']) await game.act('take', id);
+  await game.actItem('use', 'burro', 'farina');
+  await game.actItem('use', 'impasto', 'miele');
+  await game.actItem('use', 'cannella', 'impasto_dolce');
+  await game.act('use', 'forno', 'impasto_speziato');
+  await game.act('walk', 'uscita');
+  await game.act('walk', 'sentiero_lago');
+  assert.ok(game.g.flag('pioggia_arrivata'));
+  await game.act('use', 'pista');
+  await game.act('use', 'buca_pesca', 'canna_pesca');
+  assert.ok(game.g.has('stella_nord') && game.g.has('pesce_argento'));
+  await game.act('walk', 'uscita');
+  await game.act('walk', 'porta_laboratorio');
+  await game.act('use', 'tavolo_officina', 'stella_nord');
+  await game.act('use', 'cuoco_elfo', 'pesce_argento');
+  await game.act('take', 'sacco_elvesco');
+  assert.ok(game.g.has('sacco_regali'));
+  await game.act('walk', 'uscita');
+  await game.act('walk', 'porta_babbo');
+  await game.act('use', 'babbo_natale', 'biscotti');
+  await game.act('use', 'regali_allaperto', 'telo_cerato');
+  await game.act('use', 'slitta', 'campanella_magica');
+  await game.act('use', 'slitta', 'sacco_regali');
+  assert.ok(io.ended, 'ending shown');
+  assert.ok(game.g.flag('natale_completato'));
+  assert.ok(!game.g.has('sacco_regali'));
+});
+
 test('the Maya story opens with Filippo shipwrecked on the beach', async () => {
   const io = makeIo(new Set()), game = Core.createGame(storyMaya, io);
   await game.begin();
@@ -334,6 +374,7 @@ function assertStoryDataConsistent(data) {
 
 test('first story data is consistent', () => assertStoryDataConsistent(story));
 test('Maya story data is consistent', () => assertStoryDataConsistent(storyMaya));
+test('Christmas story data is consistent', () => assertStoryDataConsistent(storyNatale));
 
 test('geometry helpers', () => {
   const sq = [[0, 0], [10, 0], [10, 10], [0, 10]];

@@ -1,12 +1,13 @@
 {
   "id": "./",
-  "name": "Fili: Isola Pernacchia e Isola Maya",
-  "short_name": "Fili",
-  "description": "Due avventure punta e clicca, giocabili anche offline.",
+  "name": "Le avventure",
+  "short_name": "Avventure",
+  "description": "Tre avventure punta e clicca, giocabili anche offline.",
   "lang": "it",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "orientation": "landscape",
   "background_color": "#0a0818",
   "theme_color": "#0a0818",
   "icons": [
