@@ -1,10 +1,10 @@
 # Session log
 
 > [!summary]
-> **What:** diary of the work sessions on both adventures.
-> **Impact:** the game is public at https://dariobronx.github.io/pernacchia/; the lighthouse adventure has two chapters (13 rooms, 27 objects), and the Maya adventure can be finished from start to end (proved by the automatic test).
-> **Open points:** the Kokoro voice-profile permissions are not fully documented; no child or tablet play-test yet.
-> **Next step:** confirm voice-use rights before commercial use, then play-test on a phone or tablet.
+> **What:** diary of the work sessions on all three adventures.
+> **Impact:** the game is public at https://dariobronx.github.io/pernacchia/; lighthouse, Maya and Christmas stories can each be tested from the title screen.
+> **Open points:** the Kokoro voice-profile permissions are not fully documented; review the new Christmas scenes on a phone or tablet.
+> **Next step:** check touch layout on a phone or tablet.
 
 ## 2026-11-13
 
@@ -88,6 +88,32 @@
 - The 15 automatic tests passed before publication. Private IDE files and the local voice-generation tool were excluded.
 - Enabled GitHub Pages from branch `main` and folder `/(root)`; verified the public game page responds over HTTPS.
 
+## 2026-11-15 (Christmas adventure)
+
+- Added a third, independently selectable story: Fili helps the village through sudden rain, makes cookies, skates, fishes, repairs Santa's sleigh bell and delivers the gifts with the reindeer.
+- Added original winter scenes, decorated shops and houses, animated snow, fish under the lake ice, reindeer, elves, Santa and Fili's winter coat and pom-pom hat.
+- On this computer, all three adventures can be selected from the title screen for testing. Online, the selector is hidden and stories progress in order: Lighthouse, Maya, Christmas.
+- Added the Christmas files to the offline app shell and a separate original music loop. No remote assets or services are used.
+- The full Christmas walkthrough, story data, local story selection and offline file list are covered by automatic tests.
+- First launch asks for a player name, saves it locally and uses it in displayed story text and sharing messages. The recorded voice library has no personalized versions, so those lines are not spoken aloud with a custom name.
+- Centered the equal-sized install and language controls on the bottom row and added clear vertical gaps between menu rows.
+- Replaced the incorrect arrow with the standard three-node share icon. The installed Android app label is generic because its manifest is static.
+- Coffee and advertising buttons now appear only with the three-second pre-game support message; the ad button has a fitted two-line label and a locally drawn TV/play icon.
+- Added in-game −/+ controls to shorten or extend every dialogue by one second per tap (up to 4 seconds shorter or 8 seconds longer), including the current line; the preference is saved locally.
+- Raised the offline cache version so devices cannot keep serving the previous game files. A detected update refreshes inactive screens, without interrupting an active game.
+- Tested the name → title → three-second support screen → game transition in local Edge; it reached play without freezing. Repositioned Fili's winter hat above the eyes.
+- Temporarily removed the title-screen share button and its sharing-options screen at the player's request.
+- Clarified the request: restored the share-symbol button at the top left and its options screen, while removing only the separate text button “Condividi…”. Added hover descriptions to icon-only controls.
+- Bumped the offline cache again so installed copies pick up the restored icon and tooltip changes.
+- Reproduced the empty winter-lake screen: its gradient helper received two color strings instead of a color-stop list and threw during every frame. Corrected the argument and bumped the offline cache to v5.
+- Aligned the email and WhatsApp choices on one row and added simple, non-branded icons.
+- Rebuilt the Christmas interiors, frozen lake and Santa's sleigh yard with stronger perspective, room-specific construction, layered lighting and hand-placed story props. Kept the village square's original artwork.
+- Limited hover descriptions to the first game session on this device and recorded that first play locally.
+- Removed hover descriptions entirely; bumped the offline cache so installed copies receive the change.
+- Gave each Christmas shop its own perspective floor finish and added clearer, multi-part shapes to the bakery goods, skates and fishing gear.
+- Simplified the shop floors into a quieter one-point tile grid; removed the high-contrast checkerboard that obscured the perspective and bumped the offline cache to v8.
+- Added two subtle geometric facets to the shared rectangle, ellipse and polygon drawing helpers, enriching the main forms across all three adventures; bumped the offline cache to v9.
+
 ## Q&A
 
 ### Can the graphics be improved further?
@@ -110,6 +136,22 @@ The source and game are public at https://dariobronx.github.io/pernacchia/. The 
 
 No. The Maya adventure stays visible but locked until the lighthouse story is completed. Completion is remembered in the same browser and device.
 
+### Can I use my own name instead of Fili?
+
+Yes. The game asks once on first launch and stores the name only in the current browser on this device. It appears in story text and sharing messages; recorded voice files are not personalized, so those lines are not spoken aloud.
+
+### When do the coffee and advertising buttons appear?
+
+Only during the three-second support message before a game starts. The advertising button uses a small TV/play symbol and a two-line label so the wording fits.
+
+### Why might an old installed game appear stuck after an update?
+
+The offline cache can keep older game files. The cache version is now updated, and inactive screens reload automatically when the new files take control; an active game is not interrupted.
+
+### How do I change how long dialogue stays visible?
+
+Use the − and + controls at the bottom of the game: each tap shortens or extends dialogue by one second, up to four seconds shorter or eight seconds longer than normal. The setting is saved on this device.
+
 ### What does the English test option translate?
 
 Nothing yet. It is a test selection only: menus and story stay Italian, and the voice button explains that spoken audio is currently Italian-only.
@@ -117,6 +159,10 @@ Nothing yet. It is a test selection only: menus and story stay Italian, and the 
 ### Why are coffee support and ads not active yet?
 
 The coffee button needs the chosen payment-page link, and rewarded ads need an approved provider. Both remain inactive until those are configured. The interface says support helps further the development of this game and future games, and ads never start automatically.
+
+### How can I choose stories to test on this computer?
+
+Open the game locally (`file://` or `localhost`); the title screen has a button for each story. Online, the selector is hidden and the stories start one after another.
 
 ### What does the close button do in a browser?
 

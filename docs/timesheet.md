@@ -2,9 +2,9 @@
 
 > [!summary]
 > **What:** time spent on the adventure game.
-> **Impact:** two adventures; the Maya story and its automatic walkthrough are complete.
-> **Open points:** the English option is a test; support/ad providers remain unchosen.
-> **Next step:** play-test the new download, unlock and language controls.
+> **Impact:** three adventures; Christmas scenes and one-time control tips are improved.
+> **Open points:** recorded voices still use the original hero name; support/ad providers remain unchosen.
+> **Next step:** test touch layout on a phone or tablet.
 
 | Date | Work | Hours (approx.) |
 |------|------|-----------------|
@@ -26,3 +26,11 @@
 | 2026-11-15 | Installable offline PWA shell, sharing menu and opt-in support placeholders | 0.75 |
 | 2026-11-15 | Published reviewed source to the public GitHub repository; left Pages activation to the owner | 0.25 |
 | 2026-11-15 | Added test-English mode, first-story unlock, clearer Maya props, prominent help, voice download progress/cancel and licensing review | 1.0 |
+| 2026-11-15 | Christmas story, original winter scenes and characters, local story selector, offline app-shell integration and full walkthrough tests | 1.5 |
+| 2026-11-15 | Player name, share icon and options, icon tooltips, dialogue controls, cache refresh, support screen and winter hat | 0.75 |
+| 2026-11-15 | Fixed the winter-lake rendering crash; aligned sharing options and added icons | 0.25 |
+| 2026-11-15 | Redrew Christmas interiors, lakeside and sleigh yard; limited tooltips to first session | 1.0 |
+| 2026-11-15 | Removed hover tooltips and refreshed the offline cache | 0.1 |
+| 2026-11-15 | Improved Christmas shop floors and made displayed goods clearer | 0.35 |
+| 2026-11-15 | Reworked Christmas shop-floor perspective to remove noisy checkerboard tiles | 0.1 |
+| 2026-11-15 | Added geometric facets to shared drawing helpers across all three adventures | 0.25 |

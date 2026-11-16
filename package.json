@@ -2,7 +2,7 @@
   "name": "pernacchia",
   "version": "1.0.0",
   "private": true,
-  "description": "Two offline point-and-click adventures: Isola Pernacchia and Isola Maya",
+  "description": "Three offline point-and-click adventures: Isola Pernacchia, Isola Maya and Natale che nevica",
   "scripts": {
     "start": "node scripts/serve.js",
     "test": "node --test"

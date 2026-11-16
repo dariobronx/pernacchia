@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'fili-pwa-v1';
+const CACHE_NAME = 'fili-pwa-v9';
 const APP_FILES = [
   './',
   './index.html',
@@ -9,11 +9,13 @@ const APP_FILES = [
   './js/core.js',
   './js/story.js',
   './js/story-maya.js',
+  './js/story-natale.js',
   './js/voicekey.js',
   './js/voice-index.js',
   './js/audio.js',
   './js/art.js',
   './js/art-maya.js',
+  './js/art-natale.js',
   './js/engine.js',
   './assets/fili-isole.ico',
   './assets/apple-touch-icon.png',

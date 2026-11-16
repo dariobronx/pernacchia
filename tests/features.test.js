@@ -7,14 +7,17 @@ const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
-function createEngine(storage = new Map()) {
+function createEngine(storage = new Map(), hostname = 'game.test', protocol = 'https:') {
   const listeners = {};
+  const nameForm = { hidden: true, addEventListener(type, listener) { listeners['name-' + type] = listener; } };
+  const nameInput = { value: '', focus() {} };
+  const appTitle = { content: '' };
   const canvas = {
     getContext: () => ({ imageSmoothingQuality: 'high' }),
     addEventListener() {},
     style: {},
   };
-  let reading = false, toggleCount = 0, postedMessage = null;
+  let reading = false, toggleCount = 0, postedMessage = null, reloadCount = 0;
   const sound = {
     music() {}, unlock() {}, sfx() {}, voice() {}, hush() {},
     speak: () => false,
@@ -26,26 +29,32 @@ function createEngine(storage = new Map()) {
     AdvCore: require('../js/core.js'),
     AdvStory: require('../js/story.js'),
     AdvStoryMaya: require('../js/story-maya.js'),
+    AdvStoryNatale: require('../js/story-natale.js'),
     AdvArt: { rooms: {} },
     AdvAudio: sound,
     AdvVoiceIndex: { first: 1, second: 1 },
     addEventListener() {},
   };
   const serviceWorker = {
+    controller: {},
     ready: Promise.resolve({ active: { postMessage: (message) => { postedMessage = message; } } }),
     register: async () => ({ active: true }),
     addEventListener(type, listener) { listeners[type] = listener; },
   };
   const context = {
     window,
-    document: { getElementById: () => canvas },
+    document: {
+      getElementById: (id) => id === 'game' ? canvas : id === 'name-entry' ? nameForm : nameInput,
+      querySelector: () => appTitle,
+      title: 'Le avventure',
+    },
     localStorage: {
       getItem: (key) => storage.has(key) ? storage.get(key) : null,
       setItem: (key, value) => storage.set(key, String(value)),
       removeItem: (key) => storage.delete(key),
     },
     navigator: { serviceWorker },
-    location: { protocol: 'https:', href: 'https://game.test/' },
+    location: { protocol, href: protocol + '//game.test/', hostname, reload() { reloadCount++; } },
     requestAnimationFrame() {},
     URL,
     Math,
@@ -59,6 +68,10 @@ function createEngine(storage = new Map()) {
     listeners,
     soundState: () => ({ reading, toggleCount }),
     postedMessage: () => postedMessage,
+    reloadCount: () => reloadCount,
+    nameForm,
+    nameInput,
+    appTitle,
   };
 }
 
@@ -78,6 +91,126 @@ test('Maya story stays visible but cannot be selected until the lighthouse is co
   const unlocked = createEngine(storage);
   unlocked.api.selectStory('maya');
   assert.equal(unlocked.api.currentStoryId(), 'maya');
+});
+
+test('Christmas story can be selected independently of the lighthouse unlock', () => {
+  const game = createEngine();
+  game.api.selectStory('natale');
+  assert.equal(game.api.currentStoryId(), 'natale');
+  game.api.fast(true);
+  game.api.start(null, 'natale');
+  assert.equal(game.api.S.game.state.room, 'natale_piazza');
+});
+
+test('all stories can be selected for local testing, without changing the public Maya lock', () => {
+  const local = createEngine(new Map(), 'localhost');
+  local.api.selectStory('maya');
+  assert.equal(local.api.currentStoryId(), 'maya');
+  assert.equal(local.api.storySelectorVisible(), true);
+
+  const publicSite = createEngine();
+  publicSite.api.selectStory('maya');
+  assert.equal(publicSite.api.currentStoryId(), 'pernacchia');
+  assert.equal(publicSite.api.storySelectorVisible(), false);
+  assert.match(publicSite.api.S.note.text, /Completa prima l’avventura del Faro/);
+
+  const fileGame = createEngine(new Map(), '', 'file:');
+  assert.equal(fileGame.api.localTestMode(), true);
+});
+
+test('public stories start one after another, while local testing stays independent', async () => {
+  const game = createEngine();
+  game.api.fast(true);
+  game.api.start(null, 'pernacchia');
+  game.api.S.game.state.flags.finito = true;
+  await game.api.end();
+  assert.equal(game.api.S.nextStory.id, 'maya');
+  game.api.advance(8.1);
+  assert.equal(game.api.currentStoryId(), 'maya');
+  assert.equal(game.api.S.mode, 'play');
+
+  await game.api.end();
+  assert.equal(game.api.S.nextStory.id, 'natale');
+  game.api.advance(8.1);
+  assert.equal(game.api.currentStoryId(), 'natale');
+
+  await game.api.end();
+  assert.equal(game.api.S.nextStory, null);
+
+  const local = createEngine(new Map(), 'localhost');
+  local.api.fast(true);
+  local.api.start(null, 'pernacchia');
+  local.api.S.game.state.flags.finito = true;
+  await local.api.end();
+  assert.equal(local.api.S.nextStory, null);
+});
+
+test('new game waits exactly three seconds on the support message before starting', () => {
+  const game = createEngine();
+  game.api.beginStarting(null, 'pernacchia', true);
+  assert.equal(game.api.S.mode, 'starting');
+  assert.equal(game.api.S.pendingStart.left, 3);
+  game.api.advance(2.99);
+  assert.equal(game.api.S.mode, 'starting');
+  game.api.advance(0.02);
+  assert.equal(game.api.S.mode, 'play');
+  assert.equal(game.api.S.game.state.room, 'molo');
+});
+
+test('first launch asks for a name, saves it locally, and personalizes story text', async () => {
+  const first = createEngine();
+  assert.equal(first.api.S.mode, 'name');
+  assert.equal(first.nameForm.hidden, true);
+  assert.equal(first.api.setPlayerName(null), false);
+  assert.equal(first.api.setPlayerName('   '), false);
+  assert.equal(first.api.setPlayerName('Arianna'), true);
+  assert.equal(first.storage.get('pernacchia-player-name'), 'Arianna');
+  assert.equal(first.api.playerName(), 'Arianna');
+  assert.equal(first.api.personalize('Fili e Filippo'), 'Arianna e Arianna');
+  assert.equal(first.api.personalize('filigrana'), 'filigrana');
+  assert.equal(first.appTitle.content, 'Le avventure di Arianna');
+
+  const returning = createEngine(first.storage);
+  assert.equal(returning.api.S.mode, 'title');
+  assert.equal(returning.api.playerName(), 'Arianna');
+});
+
+test('tooltips are removed from the game', () => {
+  const engine = read('js/engine.js');
+  assert.doesNotMatch(engine, /drawTooltip|firstPlayTooltips|TOOLTIPS_SEEN_KEY|tooltipsEnabled/);
+  assert.doesNotMatch(engine, /\btip:/);
+});
+
+test('message duration can be adjusted, applies to current dialogue, and persists locally', () => {
+  const game = createEngine();
+  assert.equal(game.api.messageDurationOffset(), 0);
+  const defaultDuration = game.api.speechDuration('Una frase di prova.', false);
+  game.api.S.mode = 'play';
+  game.api.S.speech = { left: 3, age: 1 };
+  game.api.S.zones = [{ x: 850, y: 494, w: 32, h: 40, always: true, fn: () => game.api.adjustMessageDuration(1) }];
+  game.api.click(860, 500, false);
+  assert.equal(game.api.messageDurationOffset(), 1);
+  assert.equal(game.api.S.speech.left, 4);
+  assert.equal(game.api.speechDuration('Una frase di prova.', false), defaultDuration + 1);
+  assert.equal(game.storage.get('pernacchia-message-duration'), '1');
+
+  const returning = createEngine(game.storage);
+  assert.equal(returning.api.messageDurationOffset(), 1);
+  for (let i = 0; i < 10; i++) returning.api.adjustMessageDuration(1);
+  assert.equal(returning.api.messageDurationOffset(), 8);
+  for (let i = 0; i < 20; i++) returning.api.adjustMessageDuration(-1);
+  assert.equal(returning.api.messageDurationOffset(), -4);
+});
+
+test('service worker updates reload inactive screens but do not interrupt a running game', () => {
+  const game = createEngine();
+  assert.equal(typeof game.listeners.controllerchange, 'function');
+  game.listeners.controllerchange();
+  assert.equal(game.reloadCount(), 1);
+  game.api.fast(true);
+  game.api.start(null, 'pernacchia');
+  game.listeners.controllerchange();
+  assert.equal(game.reloadCount(), 1);
 });
 
 test('English test mode explains Italian-only speech instead of enabling Italian audio', () => {

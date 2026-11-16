@@ -6,25 +6,37 @@
   const STORIES = {
     pernacchia: window.AdvStory,
     maya: window.AdvStoryMaya,
+    natale: window.AdvStoryNatale,
   };
   const MAIN_STORY_COMPLETE_KEY = 'pernacchia-main-story-complete';
   const LANGUAGE_KEY = 'pernacchia-language';
+  const PLAYER_NAME_KEY = 'pernacchia-player-name';
+  const MESSAGE_DURATION_KEY = 'pernacchia-message-duration';
+  const LOCAL_TEST_MODE = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  const NEXT_PUBLIC_STORY = { pernacchia: 'maya', maya: 'natale' };
   let currentStoryId = 'pernacchia';
   let mainStoryComplete = false;
   let language = 'it';
+  let playerName = '';
+  let messageDurationOffset = 0;
   try {
     const sId = localStorage.getItem('pernacchia-current-story');
     if (sId && STORIES[sId]) currentStoryId = sId;
     mainStoryComplete = localStorage.getItem(MAIN_STORY_COMPLETE_KEY) === '1';
     language = localStorage.getItem(LANGUAGE_KEY) === 'en' ? 'en' : 'it';
-  } catch (err) {}
-  if (currentStoryId === 'maya' && !mainStoryComplete) currentStoryId = 'pernacchia';
+    playerName = localStorage.getItem(PLAYER_NAME_KEY) || '';
+    const savedDuration = Number(localStorage.getItem(MESSAGE_DURATION_KEY));
+    if (Number.isInteger(savedDuration) && savedDuration >= -4 && savedDuration <= 8) messageDurationOffset = savedDuration;
+  } catch (err) { playerName = ''; }
+  if (!/^[\p{L}\p{M}][\p{L}\p{M} '-]{0,19}$/u.test(playerName.trim())) playerName = '';
+  if (currentStoryId === 'maya' && !mainStoryComplete && !LOCAL_TEST_MODE) currentStoryId = 'pernacchia';
   const getStory = () => STORIES[currentStoryId] || window.AdvStory;
 
   const W = 960, H = 540, SCENE_H = 420, Z = 3; // layout units; the scene is 320 x 140 units, 3 layout units each
   const HD = 2; // real pixels per layout unit: the canvas is 1920 x 1080 and nothing is enlarged afterwards
   const FONT = '"Trebuchet MS", Verdana, sans-serif';
   const mayaTheme = () => currentStoryId === 'maya';
+  const winterTheme = () => currentStoryId === 'natale';
   const VERB_TEXT = { look: 'Guarda', take: 'Prendi', use: 'Usa', talk: 'Parla con', open: 'Apri', give: 'Dai', walk: 'Vai verso' };
   const SUPPORT_URL = '';
   let installPrompt = null;
@@ -34,15 +46,79 @@
   ctx.imageSmoothingQuality = 'high';
 
   const S = {
-    mode: 'title', t: 0, game: null, fast: false, log: [],
+    mode: playerName ? 'title' : 'name', t: 0, game: null, fast: false, log: [],
     player: { x: 0, y: 0, dir: 1, walk: 0, target: null, done: null },
     speech: null, choices: null, timers: [], locked: false, hurry: false,
     fade: 1, fadeTarget: 1, fadeDone: null,
     verb: null, held: null, mouse: { x: -1, y: -1 }, invRow: 0, zones: [], confirmNew: false,
     autoChoose: null, reveal: 0, card: null, note: null,
     voiceDownload: null,
+    nextStory: null,
+    pendingStart: null,
   };
   const NO_GAME = { flag: () => false, has: () => false };
+  const nameForm = document.getElementById('name-entry');
+  const nameInput = document.getElementById('player-name-input');
+
+  function personalize(value) {
+    return playerName ? value.replace(/\b(?:Filippo|Fili)\b/gi, playerName) : value;
+  }
+  function speechDuration(text, spoken) {
+    const base = spoken ? 6 + text.length * 0.13 : Math.min(8, 1.5 + text.length * 0.065);
+    return Math.max(1.5, base + messageDurationOffset);
+  }
+  function adjustMessageDuration(change) {
+    const next = Math.max(-4, Math.min(8, messageDurationOffset + change));
+    if (next === messageDurationOffset) {
+      S.note = { text: next < 0 ? 'Durata minima dei messaggi raggiunta.' : 'Durata massima dei messaggi raggiunta.', left: 3 };
+      return;
+    }
+    messageDurationOffset = next;
+    let saved = true;
+    try {
+      localStorage.setItem(MESSAGE_DURATION_KEY, String(messageDurationOffset));
+    } catch (err) {
+      saved = false;
+    }
+    if (S.speech) S.speech.left = Math.max(1.5, S.speech.left + change);
+    S.note = saved
+      ? { text: 'Durata dei messaggi: ' + (messageDurationOffset > 0 ? '+' : '') + messageDurationOffset + ' secondi.', left: 3 }
+      : { text: 'Durata aggiornata, ma non salvata su questo dispositivo.', left: 5 };
+  }
+  if (playerName) {
+    document.title = personalize('Le avventure di Fili');
+    const appTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (appTitle) appTitle.content = personalize('Le avventure di Fili');
+  }
+  function setPlayerName(value) {
+    if (typeof value !== 'string') {
+      S.note = { text: 'Inserisci un nome valido.', left: 5 };
+      return false;
+    }
+    const name = value.normalize('NFC').trim().replace(/\s+/g, ' ');
+    if (!/^[\p{L}\p{M}][\p{L}\p{M} '-]{0,19}$/u.test(name)) {
+      S.note = { text: 'Inserisci un nome di 1–20 lettere; puoi usare spazi e trattini.', left: 5 };
+      return false;
+    }
+    try {
+      localStorage.setItem(PLAYER_NAME_KEY, name);
+    } catch (err) {
+      S.note = { text: 'Non riesco a salvare il nome su questo dispositivo.', left: 5 };
+      return false;
+    }
+    playerName = name;
+    document.title = personalize('Le avventure di Fili');
+    const appTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (appTitle) appTitle.content = personalize('Le avventure di Fili');
+    S.mode = 'title';
+    nameForm.hidden = true;
+    return true;
+  }
+  nameForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    setPlayerName(nameInput.value);
+  });
+  if (!playerName) requestAnimationFrame(() => nameInput.focus());
 
   // ---------- saving ----------
   function getSaveKey(id) {
@@ -99,15 +175,16 @@
   }
   const io = {
     say(who, text) {
+      text = personalize(text);
       S.log.push(who + ': ' + text); if (S.log.length > 300) S.log.shift();
       if (S.fast) return Promise.resolve();
       return new Promise((done) => {
         const [x, y] = speechSpot(who);
-        const sp = { who, x, y, lines: wrap(text, 460, 'bold 22px ' + FONT), color: (getStory().actors[who] || {}).color || '#fff', left: Math.min(8, 1.5 + text.length * 0.065), age: 0, done };
+        const sp = { who, x, y, lines: wrap(text, 460, 'bold 22px ' + FONT), color: (getStory().actors[who] || {}).color || '#fff', left: speechDuration(text, false), age: 0, done };
         S.speech = sp;
         // read aloud: the line stays until the voice has finished (plus a safety limit), else the usual beep and timer
-        if (Sound.speak(who, text, () => { if (S.speech === sp) sp.left = Math.min(sp.left, 0.5); })) sp.left = 6 + text.length * 0.13;
-        else Sound.voice(who);
+        if (!Sound.speak(who, text, () => {})) Sound.voice(who);
+        else sp.left = speechDuration(text, true);
       });
     },
     walkTo(x, y) {
@@ -143,22 +220,35 @@
       }
       if (!S.fast) await fadeTo(1);
       S.mode = 'ending'; clearSave(); Sound.music('taverna'); S.fade = 1; S.fadeTarget = 0;
+      const next = !LOCAL_TEST_MODE && NEXT_PUBLIC_STORY[currentStoryId];
+      S.nextStory = next ? { id: next, left: 8 } : null;
+      if (next) {
+        try { localStorage.setItem('pernacchia-current-story', next); } catch (err) {}
+      }
     },
   };
   function fadeTo(v) { return new Promise((done) => { if (S.fadeDone) S.fadeDone(); S.fadeTarget = v; S.fadeDone = done; }); }
 
   function startGame(saved, storyId) {
     if (storyId && STORIES[storyId]) currentStoryId = storyId;
-    if (currentStoryId === 'maya' && !mainStoryComplete) {
+    if (currentStoryId === 'maya' && !mainStoryComplete && !LOCAL_TEST_MODE) {
       currentStoryId = 'pernacchia';
       S.note = { text: 'Completa prima l’avventura del Faro: poi si sbloccherà l’Isola Maya!', left: 5 };
     }
     try { localStorage.setItem('pernacchia-current-story', currentStoryId); } catch (e) {}
     const curStory = getStory();
     S.game = Core.createGame(curStory, io, saved || undefined);
-    S.mode = 'play'; S.fade = 1; S.fadeTarget = 1; S.verb = S.held = S.speech = S.choices = S.card = null; S.invRow = 0; S.timers = [];
+    S.mode = 'play'; S.fade = 1; S.fadeTarget = 1; S.verb = S.held = S.speech = S.choices = S.card = null; S.invRow = 0; S.timers = []; S.nextStory = null; S.pendingStart = null;
     S.player.x = S.game.state.x; S.player.y = S.game.state.y;
     S.game.begin();
+  }
+
+  function beginStarting(saved, storyId, clearExisting) {
+    const id = storyId || currentStoryId;
+    if (!STORIES[id]) return;
+    S.pendingStart = { saved, storyId: id, clearExisting, left: 3 };
+    S.mode = 'starting';
+    Sound.unlock();
   }
 
   // ---------- update ----------
@@ -169,6 +259,24 @@
       const d = dt * 4; S.fade = S.fade < S.fadeTarget ? Math.min(S.fadeTarget, S.fade + d) : Math.max(S.fadeTarget, S.fade - d);
     }
     if (S.fade === S.fadeTarget && S.fadeDone) { const f = S.fadeDone; S.fadeDone = null; f(); }
+    if (S.mode === 'ending' && S.nextStory) {
+      S.nextStory.left -= dt;
+      if (S.nextStory.left <= 0) {
+        const next = S.nextStory.id;
+        S.nextStory = null;
+        startGame(null, next);
+        return;
+      }
+    }
+    if (S.mode === 'starting' && S.pendingStart) {
+      S.pendingStart.left -= dt;
+      if (S.pendingStart.left <= 0) {
+        const pending = S.pendingStart;
+        if (pending.clearExisting) clearSave(pending.storyId);
+        startGame(pending.saved, pending.storyId);
+      }
+      return;
+    }
     if (S.mode !== 'play') return;
     if (S.reveal > 0) S.reveal -= dt;
     const fl = S.game.state.flags; fl.tempo = (fl.tempo || 0) + dt; // play time, shown at the end
@@ -327,7 +435,6 @@
     if (S.verb) return VERB_TEXT[S.verb] + ' ' + (target || '...');
     if (hot) return VERB_TEXT[g.defaultVerb(hot)] + ' ' + target;
     if (zone && zone.item) return target;
-    if (zone && zone.tip) return zone.tip;
     return '';
   }
 
@@ -348,10 +455,10 @@
       return;
     }
     if (S.mode !== 'play') { if (zone && zone.fn) { Sound.sfx('ui'); zone.fn(); } return; }
+    if (zone && zone.always) { Sound.sfx('ui'); zone.fn(); return; }
     if (S.card) { if (S.card.age > 0.6) endCard(); return; }
     if (S.speech) { if (S.speech.age > 0.25) endSpeech(); return; }
     if (S.choices) { if (zone && zone.choice) { const ch = S.choices; S.choices = null; Sound.sfx('ui'); ch.done(zone.choice); } return; }
-    if (zone && zone.always) { Sound.sfx('ui'); zone.fn(); return; }
     if (S.locked) { S.hurry = true; return; }
     if (zone) { Sound.sfx('ui'); if (zone.item) clickItem(zone.item, right); else if (zone.fn) zone.fn(); return; }
     if (my >= SCENE_H) return;
@@ -371,6 +478,7 @@
   // ---------- drawing ----------
   function text(str, x, y, o) {
     o = o || {};
+    str = personalize(str);
     const font = mayaTheme() ? 'Georgia, "Times New Roman", serif' : FONT;
     ctx.font = (o.bold === false ? '' : 'bold ') + (o.size || 18) + 'px ' + font;
     ctx.textAlign = o.align || 'center'; ctx.textBaseline = 'middle';
@@ -380,7 +488,7 @@
   function button(x, y, w, h, label, zone, o) {
     o = o || {};
     const over = S.mouse.x >= x && S.mouse.x <= x + w && S.mouse.y >= y && S.mouse.y <= y + h;
-    const maya = mayaTheme();
+    const maya = mayaTheme(), winter = winterTheme();
     const help = o.emphasis === 'help';
     ctx.save();
     if (o.disabled) ctx.globalAlpha = 0.55;
@@ -391,6 +499,10 @@
       ctx.strokeStyle = help ? '#fff0b0' : o.active ? '#f0d99c' : '#b99a61'; ctx.lineWidth = help ? 3 : 1.5; ctx.stroke();
       ctx.beginPath(); ctx.roundRect(x + 3, y + 3, w - 6, h - 6, 5);
       ctx.strokeStyle = help ? 'rgba(255,255,255,0.75)' : 'rgba(248,225,171,0.2)'; ctx.lineWidth = help ? 1.25 : 0.75; ctx.stroke();
+    } else if (winter) {
+      ctx.beginPath(); ctx.roundRect(x, y, w, h, 8);
+      ctx.fillStyle = help ? (over ? '#ffe4a0' : '#f2c64f') : o.active ? '#bd4547' : over ? '#28664e' : '#194a3b'; ctx.fill();
+      ctx.strokeStyle = help || o.active ? '#ffe4a0' : '#c79a54'; ctx.lineWidth = help ? 3 : 1.5; ctx.stroke();
     } else {
       ctx.fillStyle = help ? (over ? '#ffe48a' : '#f2c64f') : o.active ? '#e0a030' : over ? '#5a4a7a' : '#3a2f55'; ctx.fillRect(x, y, w, h);
       ctx.fillStyle = help ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.12)'; ctx.fillRect(x, y, w, help ? 4 : 3);
@@ -400,7 +512,7 @@
       }
     }
     if (label) text(label, x + w / 2, y + h / 2 + 1, {
-      size: o.size || 19, color: help || maya && o.active ? '#342d20' : maya ? '#f3e5c4' : o.active ? '#2a1a12' : '#ffe9a8', outline: false,
+      size: o.size || 19, color: help || maya && o.active ? '#342d20' : maya ? '#f3e5c4' : winter && (help || o.active) ? '#fff5db' : o.active ? '#2a1a12' : '#ffe9a8', outline: false,
     });
     ctx.restore();
     S.zones.push(Object.assign({ x, y, w, h }, zone));
@@ -436,7 +548,9 @@
     const x = Math.max(maxW / 2 + 12, Math.min(W - maxW / 2 - 12, sp.x)), y = Math.max(14, Math.min(SCENE_H - hh - 8, sp.y - hh));
     ctx.fillStyle = mayaTheme()
       ? 'rgba(37,48,37,' + (0.8 * Math.min(1, sp.age * 6)) + ')'
-      : 'rgba(10,6,24,' + (0.5 * Math.min(1, sp.age * 6)) + ')';
+      : winterTheme()
+        ? 'rgba(20,54,45,' + (0.78 * Math.min(1, sp.age * 6)) + ')'
+        : 'rgba(10,6,24,' + (0.5 * Math.min(1, sp.age * 6)) + ')';
     ctx.beginPath(); ctx.roundRect(x - maxW / 2 - 12, y - 5, maxW + 24, hh + 10, 10); ctx.fill();
     if (mayaTheme()) {
       ctx.strokeStyle = 'rgba(213,179,111,0.85)'; ctx.lineWidth = 1.5;
@@ -468,10 +582,11 @@
     const g = S.game;
     const pg = ctx.createLinearGradient(0, SCENE_H, 0, H);
     if (mayaTheme()) { pg.addColorStop(0, '#344538'); pg.addColorStop(1, '#202d25'); }
+    else if (winterTheme()) { pg.addColorStop(0, '#1d5545'); pg.addColorStop(1, '#102f2d'); }
     else { pg.addColorStop(0, '#241c3e'); pg.addColorStop(1, '#151026'); }
     ctx.fillStyle = pg; ctx.fillRect(0, SCENE_H, W, H - SCENE_H);
-    ctx.fillStyle = mayaTheme() ? '#c5a367' : '#e0a030'; ctx.fillRect(0, SCENE_H, W, 2);
-    ctx.fillStyle = mayaTheme() ? '#72805d' : '#5a4a7a'; ctx.fillRect(0, SCENE_H + 2, W, 1);
+    ctx.fillStyle = mayaTheme() ? '#c5a367' : winterTheme() ? '#d9b866' : '#e0a030'; ctx.fillRect(0, SCENE_H, W, 2);
+    ctx.fillStyle = mayaTheme() ? '#72805d' : winterTheme() ? '#a4474c' : '#5a4a7a'; ctx.fillRect(0, SCENE_H + 2, W, 1);
     if (S.choices) {
       const n = S.choices.list.length, lh = Math.min(24, 112 / n);
       S.choices.list.forEach((o, i) => {
@@ -494,7 +609,7 @@
         ctx.fillStyle = id && S.held === id ? '#c9a55f' : '#42513f'; ctx.fill();
         ctx.strokeStyle = '#88784d'; ctx.lineWidth = 1; ctx.stroke();
       } else {
-        ctx.fillStyle = id && S.held === id ? '#e0a030' : '#2a2244'; ctx.fillRect(x, y, 54, 40);
+        ctx.fillStyle = id && S.held === id ? (winterTheme() ? '#bf5650' : '#e0a030') : winterTheme() ? '#174538' : '#2a2244'; ctx.fillRect(x, y, 54, 40);
         ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x, y, 54, 2);
       }
       if (!id) continue;
@@ -506,42 +621,47 @@
       button(696, 450, 30, 40, '▲', { fn: () => { S.invRow--; } }, { size: 14 });
       button(696, 494, 30, 40, '▼', { fn: () => { S.invRow++; } }, { size: 14 });
     }
-    button(736, 450, 105, 40, '💡 Aiuto', { fn: askHint, tip: 'Un consiglio su cosa fare adesso (tasto H)' }, { emphasis: 'help' });
-    button(845, 450, 105, 40, '👁 Cose', { fn: () => { S.reveal = 4; }, tip: 'Mostra tutto quello che si può toccare (tasto C)' });
+    button(736, 450, 105, 40, '💡 Aiuto', { fn: askHint }, { emphasis: 'help' });
+    button(845, 450, 105, 40, '👁 Cose', { fn: () => { S.reveal = 4; } });
     ctx.globalAlpha = 1;
-    button(736, 494, 50, 40, Sound.isSoundMuted() ? '🔇' : '🎵', { fn: toggleGameSound, always: true, tip: 'Musica ed effetti sì / no (tasto M)' });
-    button(790, 494, 92, 40, '🗣 Voce', { fn: toggleRead, always: true, tip: 'Leggi le frasi ad alta voce sì / no (tasto V)' }, { active: Sound.isReading(), size: 17 });
-    button(886, 494, 64, 40, '☰', { fn: () => { S.mode = 'menu'; }, always: true, tip: 'Menu (tasto Esc)' });
+    button(736, 494, 42, 40, Sound.isSoundMuted() ? '🔇' : '🎵', { fn: toggleGameSound, always: true });
+    button(780, 494, 68, 40, '🗣 Voce', { fn: toggleRead, always: true }, { active: Sound.isReading(), size: 15 });
+    button(850, 494, 32, 40, '−', { fn: () => adjustMessageDuration(-1), always: true }, { size: 23 });
+    button(884, 494, 32, 40, '+', { fn: () => adjustMessageDuration(1), always: true }, { size: 22 });
+    button(918, 494, 34, 40, '☰', { fn: () => { S.mode = 'menu'; }, always: true }, { size: 16 });
   }
   function askHint() { const fl = S.game.state.flags; fl.aiuti = (fl.aiuti || 0) + 1; S.game.hint(); }
   function drawBackdrop(lit) {
     if (currentStoryId === 'maya' && Art.maya_backdrop) {
       inScene((c) => Art.maya_backdrop(c, { g: NO_GAME, t: S.t, speaker: null }, lit));
+    } else if (currentStoryId === 'natale' && Art.rooms.natale_piazza) {
+      inScene((c) => Art.rooms.natale_piazza.draw(c, { g: NO_GAME, t: S.t, speaker: null }));
     } else {
       inScene((c) => Art.island(c, { g: NO_GAME, t: S.t, speaker: null }, lit));
     }
-    ctx.fillStyle = mayaTheme() ? '#202d25' : '#1c1630'; ctx.fillRect(0, SCENE_H, W, H - SCENE_H);
-    ctx.fillStyle = mayaTheme() ? '#c5a367' : '#5a4a7a'; ctx.fillRect(0, SCENE_H, W, 2);
+    ctx.fillStyle = mayaTheme() ? '#202d25' : winterTheme() ? '#10372e' : '#1c1630'; ctx.fillRect(0, SCENE_H, W, H - SCENE_H);
+    ctx.fillStyle = mayaTheme() ? '#c5a367' : winterTheme() ? '#d9b866' : '#5a4a7a'; ctx.fillRect(0, SCENE_H, W, 2);
   }
+
   function toggleFull() { if (document.fullscreenElement) document.exitFullscreen(); else if (canvas.parentElement.requestFullscreen) canvas.parentElement.requestFullscreen(); }
 
   function selectStory(id) {
+    if (!STORIES[id]) return;
     if (currentStoryId === id) return;
-    if (id === 'maya' && !mainStoryComplete) {
+    if (id === 'maya' && !mainStoryComplete && !LOCAL_TEST_MODE) {
       S.note = { text: 'Completa prima l’avventura del Faro: poi si sbloccherà l’Isola Maya!', left: 5 };
       return;
     }
     currentStoryId = id;
     S.confirmNew = false;
     try { localStorage.setItem('pernacchia-current-story', currentStoryId); } catch (e) {}
-    Sound.music(currentStoryId === 'maya' ? 'maya_spiaggia' : 'mare');
   }
 
   function publicGameUrl() {
     return location.protocol === 'https:' ? new URL('./', location.href).href : null;
   }
   function shareMessage(url) {
-    return 'Ti consiglio questo gioco gratuito: Fili e le sue avventure! ' + url;
+    return personalize('Ti consiglio questo gioco gratuito: Fili e le sue avventure! ') + url;
   }
   function shareGame(destination) {
     const url = publicGameUrl();
@@ -549,20 +669,15 @@
       S.note = { text: 'Condivisione disponibile dopo la pubblicazione su un sito sicuro.', left: 5 };
       return;
     }
-    const title = 'Fili: Isola Pernacchia e Isola Maya';
+    const title = personalize('Fili: Isola Pernacchia e Isola Maya');
     const message = shareMessage(url);
-    if (destination === 'native' && navigator.share) {
-      navigator.share({ title, text: message, url }).catch((err) => {
-        if (err.name !== 'AbortError') S.note = { text: 'Non riesco ad aprire la condivisione su questo dispositivo.', left: 5 };
-      });
-    } else if (destination === 'email') {
+    if (destination === 'email') {
       location.href = 'mailto:?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(message);
     } else if (destination === 'whatsapp') {
       window.open('https://wa.me/?text=' + encodeURIComponent(message), '_blank', 'noopener,noreferrer');
-    } else {
-      S.note = { text: 'Condivisione rapida non disponibile: scegli Email o WhatsApp.', left: 5 };
     }
   }
+
   function installGame() {
     if (installPrompt) {
       const prompt = installPrompt;
@@ -588,10 +703,14 @@
   }
 
   function drawTitle() {
+    nameForm.hidden = true;
     drawBackdrop(false);
     // Story Selector Tabs
-    button(180, 24, 290, 44, '🏝️ 1. Faro di Pernacchia', { fn: () => selectStory('pernacchia') }, { active: currentStoryId === 'pernacchia', size: 18 });
-    button(490, 24, 290, 44, '🌴 2. L\'Isola Maya', { fn: () => selectStory('maya') }, { active: currentStoryId === 'maya', disabled: !mainStoryComplete, size: 18 });
+    if (LOCAL_TEST_MODE) {
+      button(116, 24, 230, 44, '🏝️ Faro di Pernacchia', { fn: () => selectStory('pernacchia') }, { active: currentStoryId === 'pernacchia', size: 17 });
+      button(365, 24, 230, 44, '🌴 Isola Maya', { fn: () => selectStory('maya') }, { active: currentStoryId === 'maya', disabled: !mainStoryComplete, size: 17 });
+      button(614, 24, 230, 44, '🎄 Natale che nevica', { fn: () => selectStory('natale') }, { active: currentStoryId === 'natale', size: 17 });
+    }
 
     if (currentStoryId === 'maya') {
       ctx.save();
@@ -609,6 +728,17 @@
       text('Fili e l\'Isola Maya', W / 2, 224, { size: 60, color: '#f0d99c', lw: 8, stroke: '#27362c' });
       text('Il Mistero del Vulcano Pernacchione', W / 2, 294, { size: 34, color: '#dbb77a', lw: 6, stroke: '#27362c' });
       text('Un’avventura comica ai tempi dei Maya', W / 2, 350, { size: 21, color: '#f0e2c1', lw: 4, stroke: '#27362c' });
+    } else if (winterTheme()) {
+      ctx.save();
+      ctx.beginPath(); ctx.roundRect(100, 112, 760, 282, 20);
+      ctx.fillStyle = 'rgba(17,63,50,0.78)'; ctx.fill();
+      ctx.strokeStyle = 'rgba(246,215,144,0.9)'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.beginPath(); ctx.roundRect(108, 120, 744, 266, 15);
+      ctx.strokeStyle = 'rgba(255,255,255,0.26)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.restore();
+      text('Fili e il Natale', W / 2, 218, { size: 62, color: '#fff0bd', lw: 9, stroke: '#174538' });
+      text('che rischiava di sciogliersi', W / 2, 287, { size: 39, color: '#ffcf73', lw: 7, stroke: '#174538' });
+      text('Una Vigilia tra neve, biscotti e stelle', W / 2, 350, { size: 22, color: '#f6f0de', lw: 4, stroke: '#174538' });
     } else {
       text('Fili e il Faro', W / 2, 230, { size: 64, color: '#ffe066', lw: 10 });
       text('di Isola Pernacchia', W / 2, 296, { size: 40, color: '#ff9e7a', lw: 8 });
@@ -616,15 +746,63 @@
     }
 
     const saved = loadSave();
-    if (saved) button(250, 452, 220, 56, '▶ Continua', { fn: () => startGame(saved) }, { size: 24 });
-    button(saved ? 490 : 370, 452, 220, 56, S.confirmNew ? 'Sicuro? Da capo!' : 'Nuova partita', { fn: () => { if (saved && !S.confirmNew) S.confirmNew = true; else { S.confirmNew = false; clearSave(); startGame(null); } } }, { size: 22 });
-    button(880, 452, 66, 56, Sound.isSoundMuted() ? '🔇' : '🎵', { fn: toggleGameSound, tip: 'Musica ed effetti sì / no (tasto M)' }, { size: 24 });
-    button(726, 452, 144, 56, '🗣 Leggi', { fn: toggleRead, tip: 'Leggi le frasi ad alta voce' }, { size: 22, active: Sound.isReading() });
-    button(190, 400, 220, 38, '↗ Condividi / sostieni', { fn: () => { S.mode = 'support'; } }, { size: 18 });
-    button(420, 400, 190, 38, '⬇ Installa il gioco', { fn: installGame }, { size: 18 });
-    button(620, 400, 150, 38, '✕ Chiudi', { fn: closeGame }, { size: 18 });
-    button(780, 400, 160, 38, language === 'it' ? '🌐 Lingua: IT' : '🌐 English (test)', { fn: toggleLanguage }, { size: 17 });
-    if (!mainStoryComplete) text('Completa il Faro per sbloccare l’Isola Maya', W / 2, 440, { size: 16, color: '#ffe9a8', lw: 4 });
+    if (saved) button(250, 438, 220, 56, '▶ Continua', { fn: () => beginStarting(saved, currentStoryId, false) }, { size: 24 });
+    button(saved ? 490 : 370, 438, 220, 56, S.confirmNew ? 'Sicuro? Da capo!' : 'Nuova partita', {
+      fn: () => {
+        if (saved && !S.confirmNew) S.confirmNew = true;
+        else { S.confirmNew = false; beginStarting(null, currentStoryId, true); }
+      },
+    }, { size: 22 });
+    button(290, 498, 180, 30, '⬇ Installa', { fn: installGame }, { size: 14 });
+    button(490, 498, 180, 30, language === 'it' ? '🌐 Lingua: IT' : '🌐 English (test)', { fn: toggleLanguage }, { size: 14 });
+    button(10, 14, 38, 38, '', { fn: () => { S.mode = 'support'; } });
+    ctx.save();
+    ctx.strokeStyle = '#fff0bd'; ctx.fillStyle = '#fff0bd';
+    ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(24, 33); ctx.lineTo(35, 25);
+    ctx.moveTo(24, 33); ctx.lineTo(35, 41);
+    ctx.stroke();
+    for (const [x, y] of [[23, 33], [36, 24], [36, 42]]) {
+      ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+    button(912, 14, 38, 38, '✕', { fn: closeGame }, { size: 22 });
+    if (!mainStoryComplete && !LOCAL_TEST_MODE && !winterTheme()) text('Completa il Faro per sbloccare l’Isola Maya', W / 2, 370, { size: 16, color: '#ffe9a8', lw: 4 });
+  }
+
+  function drawNameEntry() {
+    nameForm.hidden = false;
+    drawBackdrop(false);
+    ctx.fillStyle = 'rgba(17,63,50,0.82)';
+    ctx.beginPath(); ctx.roundRect(110, 150, 740, 238, 18); ctx.fill();
+    ctx.strokeStyle = '#f6d790'; ctx.lineWidth = 2; ctx.stroke();
+    text('Benvenuto nelle avventure!', W / 2, 205, { size: 37, color: '#fff0bd', lw: 7, stroke: '#174538' });
+    text('Prima di iniziare, scegli il nome del protagonista.', W / 2, 248, { size: 21, color: '#f6f0de', lw: 5, stroke: '#174538' });
+  }
+
+  function drawStarting() {
+    nameForm.hidden = true;
+    drawBackdrop(false);
+    ctx.fillStyle = winterTheme() ? 'rgba(17,63,50,0.82)' : mayaTheme() ? 'rgba(32,47,37,0.82)' : 'rgba(10,6,24,0.78)';
+    ctx.beginPath(); ctx.roundRect(110, 130, 740, 286, 18); ctx.fill();
+    ctx.strokeStyle = winterTheme() ? '#f6d790' : mayaTheme() ? '#d5b36f' : '#ffd95a'; ctx.lineWidth = 2; ctx.stroke();
+    text('Per supportare ulteriormente lo sviluppo del gioco', W / 2, 192, { size: 25, color: winterTheme() ? '#fff0bd' : '#ffcc80', lw: 5 });
+    text('e di altri giochi in futuro', W / 2, 232, { size: 25, color: winterTheme() ? '#fff0bd' : '#ffcc80', lw: 5 });
+    button(190, 315, 260, 52, '☕ Offrimi un caffè', { fn: () => {
+      if (SUPPORT_URL) window.open(SUPPORT_URL, '_blank', 'noopener,noreferrer');
+      else S.note = { text: 'Il link per offrire un caffè sarà aggiunto più avanti.', left: 5 };
+    } }, { size: 17, disabled: !SUPPORT_URL });
+    button(474, 315, 296, 52, '', { fn: () => { S.note = { text: 'La pubblicità sarà disponibile solo dopo aver scelto un servizio.', left: 5 }; } }, { disabled: true });
+    ctx.save();
+    ctx.strokeStyle = winterTheme() ? '#fff0bd' : mayaTheme() ? '#f3e5c4' : '#ffe9a8';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.roundRect(490, 328, 31, 24, 4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(500, 324); ctx.lineTo(511, 324); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(501, 335); ctx.lineTo(501, 345); ctx.lineTo(510, 340); ctx.closePath(); ctx.fillStyle = ctx.strokeStyle; ctx.fill();
+    ctx.restore();
+    text('Guarda pubblicità', 643, 334, { size: 15, color: winterTheme() ? '#fff5db' : '#ffe9a8', lw: 3 });
+    text('per supportarmi', 643, 352, { size: 15, color: winterTheme() ? '#fff5db' : '#ffe9a8', lw: 3 });
   }
 
   function drawSupport() {
@@ -632,24 +810,35 @@
     ctx.fillStyle = mayaTheme() ? 'rgba(24,36,28,0.9)' : 'rgba(10,6,24,0.9)';
     ctx.beginPath(); ctx.roundRect(120, 55, 720, 425, 18); ctx.fill();
     ctx.strokeStyle = mayaTheme() ? '#c5a367' : '#8874a8'; ctx.lineWidth = 2; ctx.stroke();
-    text('Condividi e sostieni', W / 2, 94, { size: 38, color: mayaTheme() ? '#f0d99c' : '#ffe066', lw: 7 });
+    text('Condividi', W / 2, 94, { size: 38, color: mayaTheme() ? '#f0d99c' : '#ffe066', lw: 7 });
     text('Scegli tu se e come condividere: nulla parte da solo.', W / 2, 137, { size: 19, color: '#f5ead1', lw: 4 });
-    button(205, 166, 250, 48, 'Condividi…', { fn: () => shareGame('native') }, { size: 20 });
-    button(505, 166, 250, 48, 'WhatsApp', { fn: () => shareGame('whatsapp') }, { size: 20 });
-    button(205, 222, 250, 48, 'Email', { fn: () => shareGame('email') }, { size: 20 });
-    text('Per supportare ulteriormente lo sviluppo del gioco', W / 2, 302, { size: 22, color: mayaTheme() ? '#f0d99c' : '#ffcc80', lw: 4 });
-    text('e di altri giochi in futuro:', W / 2, 332, { size: 22, color: mayaTheme() ? '#f0d99c' : '#ffcc80', lw: 4 });
-    button(205, 354, 250, 48, '☕ Offri un caffè', {
-      fn: () => {
-        if (SUPPORT_URL) window.open(SUPPORT_URL, '_blank', 'noopener,noreferrer');
-        else S.note = { text: 'Il link per offrire un caffè sarà aggiunto più avanti.', left: 5 };
-      },
-    }, { size: 19, disabled: !SUPPORT_URL });
-    button(505, 354, 250, 48, '▶ Guarda una pubblicità', {
-      fn: () => { S.note = { text: 'La pubblicità sarà disponibile solo dopo aver scelto un servizio.', left: 5 }; },
-    }, { size: 18, disabled: true });
-    text('La pubblicità non partirà mai automaticamente.', W / 2, 427, { size: 16, color: '#ded4be', lw: 4 });
-    button(370, 445, 220, 42, '← Torna al menu', { fn: () => { S.mode = 'title'; } }, { size: 19 });
+    button(195, 176, 270, 56, 'WhatsApp', { fn: () => shareGame('whatsapp') }, { size: 20 });
+    drawShareOptionIcon('message', 227, 204);
+    button(495, 176, 270, 56, 'Email', { fn: () => shareGame('email') }, { size: 20 });
+    drawShareOptionIcon('email', 527, 204);
+    button(370, 354, 220, 48, '← Torna al gioco', { fn: () => { S.mode = 'title'; } }, { size: 19 });
+  }
+
+  function drawShareOptionIcon(type, x, y) {
+    ctx.save();
+    ctx.strokeStyle = '#fff0bd';
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    if (type === 'email') {
+      ctx.beginPath();
+      ctx.roundRect(x - 13, y - 9, 26, 18, 3);
+      ctx.moveTo(x - 12, y - 8); ctx.lineTo(x, y + 1); ctx.lineTo(x + 12, y - 8);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.roundRect(x - 13, y - 10, 26, 18, 6);
+      ctx.moveTo(x - 7, y + 8); ctx.lineTo(x - 10, y + 12); ctx.lineTo(x, y + 8);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x - 4, y - 4); ctx.lineTo(x - 1, y + 1); ctx.lineTo(x + 4, y + 4);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   function drawExit() {
@@ -666,13 +855,21 @@
     if (currentStoryId === 'maya') {
       text('Il Vulcano Pernacchione ha fatto la sua titanica pernacchia!', W / 2, 220, { size: 25, color: '#f5ead1', lw: 6, stroke: '#27362c' });
       text('Bravissimo Fili, Nobile Signore del Cacao e Amico della Giungla Maya!', W / 2, 260, { size: 22, color: '#d8bd83', lw: 5, stroke: '#27362c' });
+    } else if (currentStoryId === 'natale') {
+      text('La pioggia è finita: i regali sono in viaggio con Babbo Natale!', W / 2, 220, { size: 25, color: '#f5ead1', lw: 6, stroke: '#174538' });
+      text('Buon Natale, Fili: hai salvato la Vigilia!', W / 2, 260, { size: 22, color: '#ffcf73', lw: 5, stroke: '#174538' });
     } else {
       text('Il faro è acceso e la nave nera non ruberà più nessuna luce!', W / 2, 220, { size: 25, color: '#ffffff', lw: 6 });
       text('Bravissimo, Guardiano Onorario del Faro.', W / 2, 260, { size: 22, color: '#ff9e7a', lw: 5 });
     }
     text('⏱ ' + Math.floor(sec / 60) + ' min ' + (sec % 60) + ' s     💡 ' + (help === 0 ? 'nessun aiuto: che testa!' : help === 1 ? '1 aiuto' : help + ' aiuti') + '     🎒 ' + Object.keys(getStory().items).length + ' oggetti nella storia', W / 2, 314, { size: 19, color: mayaTheme() ? '#f0e2c1' : '#ffe9a8', lw: 5 });
     text('Storia, disegni e musica: tutti fatti di codice, nessun file scaricato.', W / 2, 374, { size: 16, color: mayaTheme() ? '#ead9b5' : '#d8d0ff', lw: 4 });
-    button(370, 452, 220, 56, 'Torna al titolo', { fn: () => { S.mode = 'title'; Sound.music(currentStoryId === 'maya' ? 'maya_spiaggia' : 'mare'); } }, { size: 22 });
+    if (S.nextStory) {
+      text('La prossima avventura inizia tra ' + Math.ceil(S.nextStory.left) + ' secondi', W / 2, 414, { size: 17, color: '#f5ead1', lw: 4 });
+      button(370, 452, 220, 56, 'Prosegui subito', { fn: () => { const next = S.nextStory.id; S.nextStory = null; startGame(null, next); } }, { size: 21 });
+    } else {
+      button(370, 452, 220, 56, 'Torna al titolo', { fn: () => { S.mode = 'title'; } }, { size: 22 });
+    }
   }
 
   function drawMenu() {
@@ -684,7 +881,7 @@
       [Sound.isReading() ? '🗣 Frasi lette: sì' : '🗣 Frasi lette: no', toggleRead],
       ['⛶ Schermo intero', toggleFull],
       [language === 'it' ? '🌐 Lingua: Italiano' : '🌐 Language: English (test)', toggleLanguage],
-      ['🌴 Cambia storia (salva ed esci)', () => { S.mode = 'title'; Sound.music(currentStoryId === 'maya' ? 'maya_spiaggia' : 'mare'); }],
+      ['🌴 Cambia storia (salva ed esci)', () => { S.mode = 'title'; }],
       ['Torna al titolo (salva)', () => location.reload()],
       [S.confirmNew ? 'Sicuro? Cancella tutto!' : 'Ricomincia da capo', () => { if (!S.confirmNew) S.confirmNew = true; else { clearSave(); location.reload(); } }],
     ];
@@ -694,9 +891,11 @@
   function render() {
     ctx.setTransform(HD, 0, 0, HD, 0, 0);
     S.zones = [];
-    if (S.mode === 'title') drawTitle();
+    if (S.mode === 'name') drawNameEntry();
+    else if (S.mode === 'title') drawTitle();
     else if (S.mode === 'support') drawSupport();
     else if (S.mode === 'exit') drawExit();
+    else if (S.mode === 'starting') drawStarting();
     else if (S.mode === 'ending') drawEnding();
     else {
       drawScene();
@@ -758,7 +957,6 @@
     requestAnimationFrame(frame);
   }
   S.fade = 0; S.fadeTarget = 0;
-  Sound.music(currentStoryId === 'maya' ? 'maya_spiaggia' : 'mare');
   window.addEventListener('beforeinstallprompt', (ev) => {
     ev.preventDefault();
     installPrompt = ev;
@@ -768,6 +966,10 @@
     S.note = { text: 'Gioco installato! Lo trovi tra le app del dispositivo.', left: 5 };
   });
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    const hadController = Boolean(navigator.serviceWorker.controller);
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (hadController && S.mode !== 'play' && S.mode !== 'menu') location.reload();
+    });
     navigator.serviceWorker.register('./service-worker.js').catch((err) => {
       console.error('Registrazione della modalità offline non riuscita:', err);
     });
@@ -776,9 +978,14 @@
 
   // Handle for automatic tests: advance time by hand, skip waits, act without the mouse.
   window.__adv = {
-    S, getStory, selectStory, start: startGame, clearSave, loadSave, click,
+    S, getStory, selectStory, start: startGame, beginStarting, clearSave, loadSave, click,
+    setPlayerName, playerName: () => playerName, personalize, adjustMessageDuration,
+    messageDurationOffset: () => messageDurationOffset, speechDuration,
     toggleLanguage, toggleRead, end: io.ending, language: () => language, mainStoryComplete: () => mainStoryComplete,
     currentStoryId: () => currentStoryId,
+    localTestMode: () => LOCAL_TEST_MODE,
+    storySelectorVisible: () => LOCAL_TEST_MODE,
+    advance(dt) { update(dt); },
     step(dt, times) { for (let i = 0; i < (times || 1); i++) update(dt); render(); },
     fast(on) { S.fast = on; },
     act: (verb, id, item) => S.game.act(verb, id, item),
