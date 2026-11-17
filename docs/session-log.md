@@ -2,7 +2,7 @@
 
 > [!summary]
 > **What:** diary of the work sessions on all three adventures.
-> **Impact:** all three art sets share softer light and subtle contours, with phone audio and touch controls improved.
+> **Impact:** all three art sets share softer light and subtle contours; a local gallery shows all 26 environments together.
 > **Open points:** the Kokoro voice-profile permissions are not fully documented; review the new Christmas scenes on a phone or tablet.
 > **Next step:** check touch layout on a phone or tablet.
 
@@ -129,6 +129,7 @@
 - Added the same subtle soft-light overlay and fine contour to medium-sized shapes drawn by the shared art primitives, keeping each scene's existing subjects, colors and composition.
 - The finish applies automatically to the original, Maya and Christmas art sets. Bumped the offline cache to v14.
 - Added a local rendering test for all four shared shape primitives. No images or external image services were used.
+- Exported every one of the 26 game environments as a local PNG, plus one contact sheet, to a folder on the Desktop. No images were sent online or added to the repository.
 
 ## Q&A
 
@@ -205,3 +206,7 @@ The music was mixed at a low level before reaching the phone. Its level is now o
 ### How are the existing drawings kept visually consistent?
 
 The game's scenes are drawn locally with code, not separate image files. Shared shape-drawing helpers apply the same subtle light and edge finish across the original, Maya and Christmas scenes, without changing their main shapes, colors or layout.
+
+### Where can I see all the game environments together?
+
+Open the `Galleria grafica Le avventure` folder on the Desktop. `00 - Tutti gli ambienti.png` shows all 26 environments together; the other PNG files show one environment each.
