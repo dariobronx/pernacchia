@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'fili-pwa-v13';
+const CACHE_NAME = 'fili-pwa-v14';
 const APP_FILES = [
   './',
   './index.html',
