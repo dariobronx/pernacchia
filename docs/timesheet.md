@@ -2,7 +2,7 @@
 
 > [!summary]
 > **What:** time spent on the adventure game.
-> **Impact:** three adventures; phone layout, music level and dialogue touch controls are improved.
+> **Impact:** three adventures; shared art finish, phone audio and dialogue touch controls are improved.
 > **Open points:** recorded voices still use the original hero name; support/ad providers remain unchosen.
 > **Next step:** test touch layout on a phone or tablet.
 
@@ -38,3 +38,4 @@
 | 2026-11-16 | Adapted the game to landscape phone screens, safe areas and portrait rotation prompt | 0.25 |
 | 2026-11-16 | Removed side bars on short landscape phone screens and refreshed offline cache | 0.15 |
 | 2026-11-16 | Raised music level and enlarged dialogue-choice text and touch targets | 0.25 |
+| 2026-11-17 | Applied a shared soft-light and contour finish across all three code-drawn art sets | 0.35 |

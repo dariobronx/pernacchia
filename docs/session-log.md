@@ -2,7 +2,7 @@
 
 > [!summary]
 > **What:** diary of the work sessions on all three adventures.
-> **Impact:** the public game reports install status, fills phone screens, and has louder music and clearer dialogue choices.
+> **Impact:** all three art sets share softer light and subtle contours, with phone audio and touch controls improved.
 > **Open points:** the Kokoro voice-profile permissions are not fully documented; review the new Christmas scenes on a phone or tablet.
 > **Next step:** check touch layout on a phone or tablet.
 
@@ -120,12 +120,15 @@
 - Added automatic coverage for accepted, cancelled and completed installation flows.
 - Made the game use the available landscape screen area, respect device safe areas, ask portrait-phone users to rotate, and request landscape for installed apps; refreshed the offline cache.
 - Removed side bars on short landscape phone screens by filling the full available area; refreshed the offline cache to v12.
-
-## 2026-11-16 (phone audio and dialogue choices)
-
 - Increased only the music level; effects stay unchanged, and the music still lowers while recorded speech plays. Refreshed the offline cache to v13.
 - Expanded dialogue choices across the whole control panel, with larger text, visible choice cards and larger touch areas.
-- Added automatic checks for audio levels and the dialogue choice layout.
+- Added automatic coverage for audio levels and dialogue-choice layout.
+
+## 2026-11-17 (shared art finish)
+
+- Added the same subtle soft-light overlay and fine contour to medium-sized shapes drawn by the shared art primitives, keeping each scene's existing subjects, colors and composition.
+- The finish applies automatically to the original, Maya and Christmas art sets. Bumped the offline cache to v14.
+- Added a local rendering test for all four shared shape primitives. No images or external image services were used.
 
 ## Q&A
 
@@ -198,3 +201,7 @@ On short landscape screens, the game fills the full width and height instead of 
 ### Why was the music quiet, and are dialogue choices easier to tap?
 
 The music was mixed at a low level before reaching the phone. Its level is now over twice as high while sound effects stay unchanged; music still drops while a recorded voice plays. Dialogue options now use the full control panel, with larger text, clear cards and larger touch targets.
+
+### How are the existing drawings kept visually consistent?
+
+The game's scenes are drawn locally with code, not separate image files. Shared shape-drawing helpers apply the same subtle light and edge finish across the original, Maya and Christmas scenes, without changing their main shapes, colors or layout.

@@ -22,12 +22,23 @@
     polygon(c, [[x + w, y + h], [x + w - size, y + h], [x + w, y + h - size]], 'rgba(0,0,20,0.12)');
     c.restore();
   }
+  function finishShape(c, trace, x, y, w, h) {
+    if (w < 2 || h < 2 || w * h < 20 || w * h > 5000) return;
+    c.save(); c.beginPath(); trace(); c.clip();
+    c.fillStyle = 'rgba(255,255,255,0.025)'; c.fillRect(x, y, w, h);
+    c.restore();
+    c.save(); c.beginPath(); trace();
+    c.strokeStyle = 'rgba(12,16,24,0.14)';
+    c.lineWidth = Math.min(0.35, Math.min(w, h) * 0.025);
+    c.stroke(); c.restore();
+  }
   // Rectangle. Small ones get soft corners (people, objects); big surfaces (walls, floors, sea) stay square.
   const R = (c, col, x, y, w, h) => {
     c.fillStyle = col; x = Math.round(x); y = Math.round(y);
     const m = Math.min(w, h);
     if (m > 0 && Math.max(w, h) <= 24 && c.roundRect) {
-      c.beginPath(); c.roundRect(x, y, w, h, Math.min(1.5, m * 0.3)); c.fill();
+      const radius = Math.min(1.5, m * 0.3);
+      c.beginPath(); c.roundRect(x, y, w, h, radius); c.fill();
       if (m >= 3) { // light from the top left, shade at the bottom right
         const g = c.createLinearGradient(x, y, x + w * 0.35, y + h);
         g.addColorStop(0, 'rgba(255,255,255,0.13)'); g.addColorStop(0.5, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(0,0,20,0.20)');
@@ -35,15 +46,21 @@
       }
     } else c.fillRect(x, y, w, h);
     facets(c, x, y, w, h, m > 0 && Math.max(w, h) <= 24);
+    finishShape(c, () => {
+      if (m > 0 && Math.max(w, h) <= 24 && c.roundRect) c.roundRect(x, y, w, h, Math.min(1.5, m * 0.3));
+      else c.rect(x, y, w, h);
+    }, x, y, w, h);
   };
   const B = (c, col, x, y, w, h) => {
     x = Math.round(x); y = Math.round(y);
     c.fillStyle = col; c.fillRect(x, y, w, h);
     facets(c, x, y, w, h, false);
+    finishShape(c, () => c.rect(x, y, w, h), x, y, w, h);
   }; // always square: pieces stacked into one shape
   const E = (c, col, x, y, rx, ry) => {
     ry = ry === undefined ? rx : ry;
     c.fillStyle = col; c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, 7); c.fill();
+    finishShape(c, () => { c.ellipse(x, y, rx, ry, 0, 0, 7); }, x - rx, y - ry, rx * 2, ry * 2);
     const size = Math.min(2.5, rx * 0.55, ry * 0.55);
     if (size < 1.2) return;
     c.save(); c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, 7); c.clip();
@@ -54,6 +71,15 @@
   const P = (c, col, pts) => {
     polygon(c, pts, col);
     if (pts.length < 3) return;
+    let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
+    pts.forEach(([x, y]) => {
+      left = Math.min(left, x); top = Math.min(top, y);
+      right = Math.max(right, x); bottom = Math.max(bottom, y);
+    });
+    finishShape(c, () => {
+      pts.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])));
+      c.closePath();
+    }, left, top, right - left, bottom - top);
     let area = 0, centerX = 0, centerY = 0;
     pts.forEach((p, i) => {
       const next = pts[(i + 1) % pts.length];
